@@ -25,7 +25,6 @@ SOURCES += main.cpp\
     mainwindow_terminal.cpp \
     settingsdialog.cpp \
     console.cpp
-
 HEADERS  += mainwindow.h \
     mainwindow_terminal.h \
     settingsdialog.h \

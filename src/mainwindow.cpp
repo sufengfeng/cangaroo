@@ -68,6 +68,7 @@ MainWindow::MainWindow(QWidget* parent) :
 
     connect(&backend(), SIGNAL(beginMeasurement()), this, SLOT(updateMeasurementActions()));
     connect(&backend(), SIGNAL(endMeasurement()), this, SLOT(updateMeasurementActions()));
+
     updateMeasurementActions();
 
     connect(ui->actionSave_Trace_to_file, SIGNAL(triggered(bool)), this, SLOT(saveTraceToFile()));
@@ -87,7 +88,9 @@ MainWindow::MainWindow(QWidget* parent) :
 
     _setupDlg = new SetupDialog(Backend::instance(), nullptr); // NOTE: must be called after drivers/plugins are initialized
     m_sMainWindow_terminal = new MainWindow_terminal;
-    //    connect(m_sMainWindow_terminal, SIGNAL(MainWindow_terminal->showCangaroo()), this, SLOT(MainWindow.show()));
+    //    connect(m_ui->actionConfigure, &QAction::triggered, this, &MainWindow_terminal::showConfig);
+    connect(m_sMainWindow_terminal, MainWindow_terminal::showCangaroo, this, MainWindow::show);
+    connect(backend().getTrace(), CanTrace::messageEnqueued, m_sMainWindow_terminal, MainWindow_terminal::SlotReveiveCanData);
 }
 
 MainWindow::~MainWindow()
@@ -105,15 +108,16 @@ void MainWindow::updateMeasurementActions()
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    if(askSaveBecauseWorkspaceModified() != QMessageBox::Cancel)
-    {
-        backend().stopMeasurement();
-        event->accept();
-    }
-    else
-    {
-        event->ignore();
-    }
+    //    if(askSaveBecauseWorkspaceModified() != QMessageBox::Cancel)
+    //    {
+    //        backend().stopMeasurement();
+    //        event->accept();
+    //    }
+    //    else
+    //    {
+    //        event->ignore();
+    //    }
+    event->accept();
 }
 
 Backend& MainWindow::backend()
@@ -144,10 +148,10 @@ void MainWindow::stopAndClearMeasurement()
     backend().clearTrace();
     backend().clearLog();
 }
-//void MainWindow::ShowTerminal()
-//{
-//    this->m_sMainWindow_terminal->show();
-//}
+void MainWindow::ShowTerminal()
+{
+    this->m_sMainWindow_terminal->show();
+}
 void MainWindow::clearWorkspace()
 {
     ui->mainTabs->clear();

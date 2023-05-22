@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
-    w.show();
-    //    w.ShowTerminal();
+    //    w.show();
+    w.ShowTerminal();
     return a.exec();
 }

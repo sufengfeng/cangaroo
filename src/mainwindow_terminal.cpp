@@ -3,7 +3,18 @@
 
 #include "console.h"
 #include "settingsdialog.h"
+#include <core/MeasurementSetup.h>
+#include <core/CanTrace.h>
+#include <window/TraceWindow/TraceWindow.h>
+#include <window/SetupDialog/SetupDialog.h>
+#include <window/LogWindow/LogWindow.h>
+#include <window/GraphWindow/GraphWindow.h>
+#include <window/CanStatusWindow/CanStatusWindow.h>
+#include <window/RawTxWindow/RawTxWindow.h>
 
+#include <driver/SLCANDriver/SLCANDriver.h>
+#include <driver/CANBlastDriver/CANBlasterDriver.h>
+#include <driver/CanInterface.h>
 #include <QLabel>
 #include <QMessageBox>
 
@@ -39,11 +50,14 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     //! [2]
     connect(m_console, &Console::getData, this, &MainWindow_terminal::writeData);
     //! [3]
+
 }
 //! [3]
 
 MainWindow_terminal::~MainWindow_terminal()
 {
+    backend().stopMeasurement();
+
     delete m_settings;
     delete m_ui;
 }
@@ -100,11 +114,87 @@ void MainWindow_terminal::about()
                           "use the Qt Serial Port module in modern GUI applications "
                           "using Qt, with a menu bar, toolbars, and a status bar."));
 }
+void MainWindow_terminal::SendMessageByCan(const QByteArray& data)
+{
+    //    qDebug() << data;
+    CanMessage msg;
 
+    bool en_extended = false;
+    bool en_rtr = false;
+
+    //    uint8_t data_int[64];
+    int data_ctr = 0;
+
+    //    data_int[data_ctr++] = ui->fieldByte0_0->text().toUpper().toInt(NULL, 16);
+
+    uint32_t address = 0x80;
+
+    uint8_t dlc = data.length();
+    if(dlc > 8)
+    {
+        dlc = 8;
+    }
+    // Set payload data
+    for(int i = 0; i < dlc; i++)
+    {
+        //        data_int[data_ctr++] = data[i];
+        msg.setDataAt(i, data[i]);
+    }
+
+    msg.setId(address);
+    msg.setLength(dlc);
+
+    msg.setExtended(en_extended);
+    msg.setRTR(en_rtr);
+    msg.setErrorFrame(false);
+
+    //    if(ui->checkbox_BRS->isChecked())
+    //    {
+    //        msg.setBRS(true);
+    //    }
+    //    if(ui->checkbox_FD->isChecked())
+    //    {
+    //        msg.setFD(true);
+    //    }
+
+    CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
+    if(canInterfaceIdList.isEmpty() == false)
+    {
+        CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
+        intf->sendMessage(msg);
+    }
+    else
+    {
+        qDebug() << "no device";
+    }
+
+    //    char outmsg[256];
+    //    snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
+    //             msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
+    //             msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
+    //    log_info(outmsg);
+
+}
+int MainWindow_terminal::SetCanInterfaceId(int interfaceId)
+{
+    return m_nCanInterfaceId = interfaceId;
+}
+bool MainWindow_terminal::IsCanDevice(void)
+{
+    return m_ui->actionCanDevice->isChecked();
+}
 //! [6]
 void MainWindow_terminal::writeData(const QByteArray& data)
 {
-    m_serial->write(data);
+    if(IsCanDevice())
+    {
+        SendMessageByCan(data);
+    }
+    else
+    {
+        m_serial->write(data);
+    }
+
 }
 //! [6]
 
@@ -114,8 +204,24 @@ void MainWindow_terminal::readData()
     const QByteArray data = m_serial->readAll();
     m_console->putData(data);
 }
+Backend& MainWindow_terminal::backend()
+{
+    return Backend::instance();
+}
 //! [7]
+void MainWindow_terminal::SlotReveiveCanData(int idx)
+{
+    CanTrace* p_sTrace = backend().getTrace();
 
+    const CanMessage* p_sCanMessage = p_sTrace->getMessage(idx);
+    //    qDebug() << "test" << idx << p_sCanMessage->getLength() << p_sCanMessage->getByte(0);
+    QByteArray data ;
+    for(int i = 0; i < p_sCanMessage->getLength(); i++)
+    {
+        data.append(p_sCanMessage->getByte(i));
+    }
+    m_console->putData(data);
+}
 //! [8]
 void MainWindow_terminal::handleError(QSerialPort::SerialPortError error)
 {
@@ -132,15 +238,16 @@ void MainWindow_terminal::initActionsConnections()
     connect(m_ui->actionConnect, &QAction::triggered, this, &MainWindow_terminal::openSerialPort);
     connect(m_ui->actionDisconnect, &QAction::triggered, this, &MainWindow_terminal::closeSerialPort);
     connect(m_ui->actionQuit, &QAction::triggered, this, &MainWindow_terminal::close);
-    connect(m_ui->actionConfigure, &QAction::triggered, m_settings, &SettingsDialog::show);
-    //    connect(m_ui->actionConfigure, &QAction::triggered, this, &MainWindow_terminal::showConfig);
+    //    connect(m_ui->actionConfigure, &QAction::triggered, m_settings, &SettingsDialog::show);
+    connect(m_ui->actionConfigure, &QAction::triggered, this, &MainWindow_terminal::showConfig);
     connect(m_ui->actionClear, &QAction::triggered, m_console, &Console::clear);
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow_terminal::about);
     connect(m_ui->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
 }
+#include "QDebug"
 void MainWindow_terminal::showConfig(void)
 {
-    if(m_ui->actionCanDevice->isChecked())
+    if(IsCanDevice())
     {
         emit showCangaroo();
     }

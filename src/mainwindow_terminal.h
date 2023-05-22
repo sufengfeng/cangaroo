@@ -55,7 +55,7 @@
 
 #include <QMainWindow>
 #include <QSerialPort>
-
+#include <core/Backend.h>
 QT_BEGIN_NAMESPACE
 
 class QLabel;
@@ -77,17 +77,23 @@ class MainWindow_terminal : public QMainWindow
 public:
     explicit MainWindow_terminal(QWidget* parent = nullptr);
     ~MainWindow_terminal();
+
+    Backend& backend();
+public slots:
+    void SlotReveiveCanData(int idx);
 signals:
-    void showCangaroo();
+    void showCangaroo(void);
 private slots:
     void openSerialPort();
     void closeSerialPort();
     void about();
     void writeData(const QByteArray& data);
     void readData();
-
+    void SendMessageByCan(const QByteArray& data);
+    int SetCanInterfaceId(int interfaceId);
     void handleError(QSerialPort::SerialPortError error);
     void showConfig();
+    bool IsCanDevice(void);
 private:
     void initActionsConnections();
 
@@ -99,6 +105,7 @@ private:
     Console* m_console = nullptr;
     SettingsDialog* m_settings = nullptr;
     QSerialPort* m_serial = nullptr;
+    int m_nCanInterfaceId;
 };
 
 #endif // MAINWINDOW_H

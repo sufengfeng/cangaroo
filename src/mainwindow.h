@@ -70,7 +70,7 @@ public slots:
     void saveTraceToFile();
 
     void updateMeasurementActions();
-    //    void ShowTerminal();
+    void ShowTerminal();
 private slots:
     void on_action_WorkspaceNew_triggered();
     void on_action_WorkspaceOpen_triggered();

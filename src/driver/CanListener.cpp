@@ -28,12 +28,12 @@
 #include <core/CanMessage.h>
 #include "CanInterface.h"
 
-CanListener::CanListener(QObject *parent, Backend &backend, CanInterface &intf)
-  : QObject(parent),
-    _backend(backend),
-    _intf(intf),
-    _shouldBeRunning(true),
-    _openComplete(false)
+CanListener::CanListener(QObject* parent, Backend& backend, CanInterface& intf)
+    : QObject(parent),
+      _backend(backend),
+      _intf(intf),
+      _shouldBeRunning(true),
+      _openComplete(false)
 {
     _thread = new QThread();
 }
@@ -48,7 +48,7 @@ CanInterfaceId CanListener::getInterfaceId()
     return _intf.getId();
 }
 
-CanInterface &CanListener::getInterface()
+CanInterface& CanListener::getInterface()
 {
     return _intf;
 }
@@ -58,12 +58,14 @@ void CanListener::run()
     // Note: open and close done from run() so all operations take place in the same thread
     //CanMessage msg;
     QList<CanMessage> rxMessages;
-    CanTrace *trace = _backend.getTrace();
+    CanTrace* trace = _backend.getTrace();
     _intf.open();
     _openComplete = true;
-    while (_shouldBeRunning) {
-        if (_intf.readMessage(rxMessages, 1000)) {
-            for(CanMessage msg: rxMessages)
+    while(_shouldBeRunning)
+    {
+        if(_intf.readMessage(rxMessages, 1000))
+        {
+            for(CanMessage msg : rxMessages)
             {
                 trace->enqueueMessage(msg, false);
             }
@@ -82,7 +84,9 @@ void CanListener::startThread()
 
     // Wait for interface to be open before returning so that beginMeasurement is emitted after interface open
     while(!_openComplete)
-      QThread().usleep(250);
+    {
+        QThread().usleep(250);
+    }
 }
 
 void CanListener::requestStop()

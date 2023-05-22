@@ -33,13 +33,13 @@
 #include <driver/CanListener.h>
 #include <parser/dbc/DbcParser.h>
 
-Backend *Backend::_instance = 0;
+Backend* Backend::_instance = 0;
 
 Backend::Backend()
-  : QObject(0),
-    _measurementRunning(false),
-    _measurementStartTime(0),
-    _setup(this)
+    : QObject(0),
+      _measurementRunning(false),
+      _measurementStartTime(0),
+      _setup(this)
 {
     _logModel = new LogModel(*this);
 
@@ -49,9 +49,10 @@ Backend::Backend()
     connect(&_setup, SIGNAL(onSetupChanged()), this, SIGNAL(onSetupChanged()));
 }
 
-Backend &Backend::instance()
+Backend& Backend::instance()
 {
-    if (!_instance) {
+    if(!_instance)
+    {
         _instance = new Backend;
     }
     return *_instance;
@@ -62,7 +63,7 @@ Backend::~Backend()
     delete _trace;
 }
 
-void Backend::addCanDriver(CanDriver &driver)
+void Backend::addCanDriver(CanDriver& driver)
 {
     driver.init(_drivers.size());
     _drivers.append(&driver);
@@ -75,17 +76,21 @@ bool Backend::startMeasurement()
     _measurementStartTime = QDateTime::currentMSecsSinceEpoch();
     _timerSinceStart.start();
 
-    int i=0;
-    foreach (MeasurementNetwork *network, _setup.getNetworks()) {
+    int i = 0;
+    foreach(MeasurementNetwork* network, _setup.getNetworks())
+    {
         i++;
-        foreach (MeasurementInterface *mi, network->interfaces()) {
+        foreach(MeasurementInterface* mi, network->interfaces())
+        {
 
-            CanInterface *intf = getInterfaceById(mi->canInterface());
-            if (intf) {
+            CanInterface* intf = getInterfaceById(mi->canInterface());
+            if(intf)
+            {
                 intf->applyConfig(*mi);
 
                 log_info(QString("Listening on interface: %1").arg(intf->getName()));
-                CanListener *listener = new CanListener(0, *this, *intf);
+                CanListener* listener = new CanListener(0, *this, *intf);
+
                 listener->startThread();
                 _listeners.append(listener);
             }
@@ -99,12 +104,15 @@ bool Backend::startMeasurement()
 
 bool Backend::stopMeasurement()
 {
-    if (_measurementRunning) {
-        foreach (CanListener *listener, _listeners) {
+    if(_measurementRunning)
+    {
+        foreach(CanListener* listener, _listeners)
+        {
             listener->requestStop();
         }
 
-        foreach (CanListener *listener, _listeners) {
+        foreach(CanListener* listener, _listeners)
+        {
             log_info(QString("Closing interface: %1").arg(getInterfaceName(listener->getInterfaceId())));
             listener->waitFinish();
         }
@@ -126,18 +134,20 @@ bool Backend::isMeasurementRunning() const
     return _measurementRunning;
 }
 
-void Backend::loadDefaultSetup(MeasurementSetup &setup)
+void Backend::loadDefaultSetup(MeasurementSetup& setup)
 {
     setup.clear();
     int i = 1;
 
-    foreach (CanDriver *driver, _drivers) {
+    foreach(CanDriver* driver, _drivers)
+    {
         driver->update();
-        foreach (CanInterfaceId intf, driver->getInterfaceIds()) {
-            MeasurementNetwork *network = setup.createNetwork();
+        foreach(CanInterfaceId intf, driver->getInterfaceIds())
+        {
+            MeasurementNetwork* network = setup.createNetwork();
             network->setName(QString().sprintf("Network %d", i++));
 
-            MeasurementInterface *mi = new MeasurementInterface();
+            MeasurementInterface* mi = new MeasurementInterface();
             mi->setCanInterface(intf);
             mi->setBitrate(500000);
             network->addInterface(mi);
@@ -150,12 +160,12 @@ void Backend::setDefaultSetup()
     loadDefaultSetup(_setup);
 }
 
-MeasurementSetup &Backend::getSetup()
+MeasurementSetup& Backend::getSetup()
 {
     return _setup;
 }
 
-void Backend::setSetup(MeasurementSetup &new_setup)
+void Backend::setSetup(MeasurementSetup& new_setup)
 {
     _setup.cloneFrom(new_setup);
 }
@@ -165,7 +175,7 @@ double Backend::currentTimeStamp() const
     return ((double)QDateTime::currentMSecsSinceEpoch()) / 1000;
 }
 
-CanTrace *Backend::getTrace()
+CanTrace* Backend::getTrace()
 {
     return _trace;
 }
@@ -175,7 +185,7 @@ void Backend::clearTrace()
     _trace->clear();
 }
 
-CanDbMessage *Backend::findDbMessage(const CanMessage &msg) const
+CanDbMessage* Backend::findDbMessage(const CanMessage& msg) const
 {
     return _setup.findDbMessage(msg);
 }
@@ -183,35 +193,41 @@ CanDbMessage *Backend::findDbMessage(const CanMessage &msg) const
 CanInterfaceIdList Backend::getInterfaceList()
 {
     CanInterfaceIdList result;
-    foreach (CanDriver *driver, _drivers) {
-        foreach (CanInterfaceId id, driver->getInterfaceIds()) {
+    foreach(CanDriver* driver, _drivers)
+    {
+        foreach(CanInterfaceId id, driver->getInterfaceIds())
+        {
             result.append(id);
         }
     }
     return result;
 }
 
-CanDriver *Backend::getDriverById(CanInterfaceId id)
+CanDriver* Backend::getDriverById(CanInterfaceId id)
 {
-    CanDriver *driver = _drivers.value((id>>8) & 0xFF);
-    if (!driver) {
+    CanDriver* driver = _drivers.value((id >> 8) & 0xFF);
+    if(!driver)
+    {
         log_critical(QString("Unable to get driver for interface id: %1. This should never happen.").arg(QString().number(id)));
     }
     return driver;
 }
 
-CanInterface *Backend::getInterfaceById(CanInterfaceId id)
+CanInterface* Backend::getInterfaceById(CanInterfaceId id)
 {
-    CanDriver *driver = getDriverById(id);
-    return driver ? driver->getInterfaceById(id) : 0;
+    CanDriver* driver = getDriverById(id);
+    return driver ? driver->getInterfaceById(id) : nullptr;
 }
 
 QString Backend::getInterfaceName(CanInterfaceId id)
 {
-    CanInterface *intf = getInterfaceById(id);
-    if (intf) {
+    CanInterface* intf = getInterfaceById(id);
+    if(intf)
+    {
         return intf->getName();
-    } else {
+    }
+    else
+    {
         log_critical(QString("Trying to get name from unknown interface id: %1. This should never happen.").arg(QString().number(id)));
         return "";
     }
@@ -219,26 +235,31 @@ QString Backend::getInterfaceName(CanInterfaceId id)
 
 QString Backend::getDriverName(CanInterfaceId id)
 {
-    CanDriver *driver = getDriverById(id);
+    CanDriver* driver = getDriverById(id);
     return driver ? driver->getName() : "";
 }
 
-CanDriver *Backend::getDriverByName(QString driverName)
+CanDriver* Backend::getDriverByName(QString driverName)
 {
-    foreach (CanDriver *driver, _drivers) {
-        if (driver->getName()==driverName) {
+    foreach(CanDriver* driver, _drivers)
+    {
+        if(driver->getName() == driverName)
+        {
             return driver;
         }
     }
     return 0;
 }
 
-CanInterface *Backend::getInterfaceByDriverAndName(QString driverName, QString deviceName)
+CanInterface* Backend::getInterfaceByDriverAndName(QString driverName, QString deviceName)
 {
-    CanDriver *driver = getDriverByName(driverName);
-    if (driver) {
+    CanDriver* driver = getDriverByName(driverName);
+    if(driver)
+    {
         return driver->getInterfaceByName(deviceName);
-    } else {
+    }
+    else
+    {
         return 0;
     }
 
@@ -248,7 +269,7 @@ pCanDb Backend::loadDbc(QString filename)
 {
     DbcParser parser;
 
-    QFile *dbc = new QFile(filename);
+    QFile* dbc = new QFile(filename);
     pCanDb candb(new CanDb());
     parser.parseFile(dbc, *candb);
     delete dbc;
@@ -261,7 +282,7 @@ void Backend::clearLog()
     _logModel->clear();
 }
 
-LogModel &Backend::getLogModel() const
+LogModel& Backend::getLogModel() const
 {
     return *_logModel;
 }
