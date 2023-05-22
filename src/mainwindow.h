@@ -24,7 +24,7 @@
 #include <QMainWindow>
 #include <QList>
 #include <core/Backend.h>
-
+#include "mainwindow_terminal.h"
 QT_BEGIN_NAMESPACE
 class QAction;
 class QMenu;
@@ -35,7 +35,8 @@ class QSignalMapper;
 class QDomElement;
 QT_END_NAMESPACE
 
-namespace Ui {
+namespace Ui
+{
 class MainWindow;
 }
 
@@ -47,19 +48,19 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
 protected:
-    void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
+    void closeEvent(QCloseEvent* event) Q_DECL_OVERRIDE;
 
 public slots:
-    QMainWindow *createTraceWindow(QString title=QString());
-    QMainWindow *createGraphWindow(QString title=QString());
-    void addGraphWidget(QMainWindow *parent=0);
-    void addRawTxWidget(QMainWindow *parent=0);
-    void addLogWidget(QMainWindow *parent=0);
-    void addStatusWidget(QMainWindow *parent=0);
+    QMainWindow* createTraceWindow(QString title = QString());
+    QMainWindow* createGraphWindow(QString title = QString());
+    void addGraphWidget(QMainWindow* parent = nullptr);
+    void addRawTxWidget(QMainWindow* parent = nullptr);
+    void addLogWidget(QMainWindow* parent = nullptr);
+    void addStatusWidget(QMainWindow* parent = nullptr);
 
     bool showSetupDialog();
     void showAboutDialog();
@@ -69,7 +70,7 @@ public slots:
     void saveTraceToFile();
 
     void updateMeasurementActions();
-
+    //    void ShowTerminal();
 private slots:
     void on_action_WorkspaceNew_triggered();
     void on_action_WorkspaceOpen_triggered();
@@ -80,17 +81,18 @@ private slots:
     void on_actionCan_Status_View_triggered();
 
 private:
-    Ui::MainWindow *ui;
-    SetupDialog *_setupDlg;
+    Ui::MainWindow* ui;
+    MainWindow_terminal* m_sMainWindow_terminal;
+    SetupDialog* _setupDlg;
 
     bool _workspaceModified;
     QString _workspaceFileName;
     QString _baseWindowTitle;
 
-    Backend &backend();
+    Backend& backend();
 
-    QMainWindow *createTab(QString title);
-    QMainWindow *currentTab();
+    QMainWindow* createTab(QString title);
+    QMainWindow* currentTab();
 
     void stopAndClearMeasurement();
 

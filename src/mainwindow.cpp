@@ -41,12 +41,12 @@
 #include <driver/CANBlastDriver/CANBlasterDriver.h>
 
 #if defined(__linux__)
-#include <driver/SocketCanDriver/SocketCanDriver.h>
+    #include <driver/SocketCanDriver/SocketCanDriver.h>
 #else
-#include <driver/CandleApiDriver/CandleApiDriver.h>
+    #include <driver/CandleApiDriver/CandleApiDriver.h>
 #endif
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
@@ -74,23 +74,25 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(showAboutDialog()));
 
 
-#if defined(__linux__)
+    #if defined(__linux__)
     Backend::instance().addCanDriver(*(new SocketCanDriver(Backend::instance())));
-#else
+    #else
     Backend::instance().addCanDriver(*(new CandleApiDriver(Backend::instance())));
-#endif
+    #endif
     Backend::instance().addCanDriver(*(new SLCANDriver(Backend::instance())));
     Backend::instance().addCanDriver(*(new CANBlasterDriver(Backend::instance())));
 
     setWorkspaceModified(false);
     newWorkspace();
 
-    _setupDlg = new SetupDialog(Backend::instance(), 0); // NOTE: must be called after drivers/plugins are initialized
-
+    _setupDlg = new SetupDialog(Backend::instance(), nullptr); // NOTE: must be called after drivers/plugins are initialized
+    m_sMainWindow_terminal = new MainWindow_terminal;
+    //    connect(m_sMainWindow_terminal, SIGNAL(MainWindow_terminal->showCangaroo()), this, SLOT(MainWindow.show()));
 }
 
 MainWindow::~MainWindow()
 {
+    delete m_sMainWindow_terminal;
     delete ui;
 }
 
@@ -101,23 +103,27 @@ void MainWindow::updateMeasurementActions()
     ui->actionStop_Measurement->setEnabled(running);
 }
 
-void MainWindow::closeEvent(QCloseEvent *event) {
-    if (askSaveBecauseWorkspaceModified()!=QMessageBox::Cancel) {
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    if(askSaveBecauseWorkspaceModified() != QMessageBox::Cancel)
+    {
         backend().stopMeasurement();
         event->accept();
-    } else {
+    }
+    else
+    {
         event->ignore();
     }
 }
 
-Backend &MainWindow::backend()
+Backend& MainWindow::backend()
 {
     return Backend::instance();
 }
 
-QMainWindow *MainWindow::createTab(QString title)
+QMainWindow* MainWindow::createTab(QString title)
 {
-    QMainWindow *mm = new QMainWindow(this);
+    QMainWindow* mm = new QMainWindow(this);
     QPalette pal(palette());
     pal.setColor(QPalette::Background, QColor(0xeb, 0xeb, 0xeb));
     mm->setAutoFillBackground(true);
@@ -126,7 +132,7 @@ QMainWindow *MainWindow::createTab(QString title)
     return mm;
 }
 
-QMainWindow *MainWindow::currentTab()
+QMainWindow* MainWindow::currentTab()
 {
     return (QMainWindow*)ui->mainTabs->currentWidget();
 }
@@ -138,7 +144,10 @@ void MainWindow::stopAndClearMeasurement()
     backend().clearTrace();
     backend().clearLog();
 }
-
+//void MainWindow::ShowTerminal()
+//{
+//    this->m_sMainWindow_terminal->show();
+//}
 void MainWindow::clearWorkspace()
 {
     ui->mainTabs->clear();
@@ -148,19 +157,26 @@ void MainWindow::clearWorkspace()
 
 bool MainWindow::loadWorkspaceTab(QDomElement el)
 {
-    QMainWindow *mw = 0;
-    QString type = el.attribute("type");    
-    if (type=="TraceWindow") {
+    QMainWindow* mw = nullptr;
+    QString type = el.attribute("type");
+    if(type == "TraceWindow")
+    {
         mw = createTraceWindow(el.attribute("title"));
-    } else if (type=="GraphWindow") {
+    }
+    else if(type == "GraphWindow")
+    {
         mw = createGraphWindow(el.attribute("title"));
-    } else {
+    }
+    else
+    {
         return false;
     }
 
-    if (mw) {
-        ConfigurableWidget *mdi = dynamic_cast<ConfigurableWidget*>(mw->centralWidget());
-        if (mdi) {
+    if(mw)
+    {
+        ConfigurableWidget* mdi = dynamic_cast<ConfigurableWidget*>(mw->centralWidget());
+        if(mdi)
+        {
             mdi->loadXML(backend(), el);
         }
     }
@@ -171,10 +187,13 @@ bool MainWindow::loadWorkspaceTab(QDomElement el)
 bool MainWindow::loadWorkspaceSetup(QDomElement el)
 {
     MeasurementSetup setup(&backend());
-    if (setup.loadXML(backend(), el)) {
+    if(setup.loadXML(backend(), el))
+    {
         backend().setSetup(setup);
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 }
@@ -183,13 +202,15 @@ void MainWindow::loadWorkspaceFromFile(QString filename)
 {
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
         log_error(QString("Cannot open workspace settings file: %1").arg(filename));
         return;
     }
 
     QDomDocument doc;
-    if (!doc.setContent(&file)) {
+    if(!doc.setContent(&file))
+    {
         file.close();
         log_error(QString("Cannot load settings from file: %1").arg(filename));
         return;
@@ -201,18 +222,23 @@ void MainWindow::loadWorkspaceFromFile(QString filename)
 
     QDomElement tabsRoot = doc.firstChild().firstChildElement("tabs");
     QDomNodeList tabs = tabsRoot.elementsByTagName("tab");
-    for (int i=0; i<tabs.length(); i++) {
-        if (!loadWorkspaceTab(tabs.item(i).toElement())) {
+    for(int i = 0; i < tabs.length(); i++)
+    {
+        if(!loadWorkspaceTab(tabs.item(i).toElement()))
+        {
             log_warning(QString("Could not read window %1 from file: %2").arg(QString::number(i), filename));
             continue;
         }
     }
 
     QDomElement setupRoot = doc.firstChild().firstChildElement("setup");
-    if (loadWorkspaceSetup(setupRoot)) {
+    if(loadWorkspaceSetup(setupRoot))
+    {
         _workspaceFileName = filename;
         setWorkspaceModified(false);
-    } else {
+    }
+    else
+    {
         log_error(QString("Unable to read measurement setup from workspace config file: %1").arg(filename));
     }
 }
@@ -226,14 +252,16 @@ bool MainWindow::saveWorkspaceToFile(QString filename)
     QDomElement tabsRoot = doc.createElement("tabs");
     root.appendChild(tabsRoot);
 
-    for (int i=0; i < ui->mainTabs->count(); i++) {
-        QMainWindow *w = (QMainWindow*)ui->mainTabs->widget(i);
+    for(int i = 0; i < ui->mainTabs->count(); i++)
+    {
+        QMainWindow* w = (QMainWindow*)ui->mainTabs->widget(i);
 
         QDomElement tabEl = doc.createElement("tab");
         tabEl.setAttribute("title", ui->mainTabs->tabText(i));
 
-        ConfigurableWidget *mdi = dynamic_cast<ConfigurableWidget*>(w->centralWidget());
-        if (!mdi->saveXML(backend(), doc, tabEl)) {
+        ConfigurableWidget* mdi = dynamic_cast<ConfigurableWidget*>(w->centralWidget());
+        if(!mdi->saveXML(backend(), doc, tabEl))
+        {
             log_error(QString("Cannot save window settings to file: %1").arg(filename));
             return false;
         }
@@ -242,22 +270,26 @@ bool MainWindow::saveWorkspaceToFile(QString filename)
     }
 
     QDomElement setupRoot = doc.createElement("setup");
-    if (!backend().getSetup().saveXML(backend(), doc, setupRoot)) {
+    if(!backend().getSetup().saveXML(backend(), doc, setupRoot))
+    {
         log_error(QString("Cannot save measurement setup to file: %1").arg(filename));
         return false;
     }
     root.appendChild(setupRoot);
 
     QFile outFile(filename);
-    if(outFile.open(QIODevice::WriteOnly|QIODevice::Text) ) {
-        QTextStream stream( &outFile );
+    if(outFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QTextStream stream(&outFile);
         stream << doc.toString();
         outFile.close();
         _workspaceFileName = filename;
         setWorkspaceModified(false);
         log_info(QString("Saved workspace settings to file: %1").arg(filename));
         return true;
-    } else {
+    }
+    else
+    {
         log_error(QString("Cannot open workspace file for writing: %1").arg(filename));
         return false;
     }
@@ -266,7 +298,8 @@ bool MainWindow::saveWorkspaceToFile(QString filename)
 
 void MainWindow::newWorkspace()
 {
-    if (askSaveBecauseWorkspaceModified() != QMessageBox::Cancel) {
+    if(askSaveBecauseWorkspaceModified() != QMessageBox::Cancel)
+    {
         stopAndClearMeasurement();
         clearWorkspace();
         createTraceWindow();
@@ -277,9 +310,11 @@ void MainWindow::newWorkspace()
 
 void MainWindow::loadWorkspace()
 {
-    if (askSaveBecauseWorkspaceModified() != QMessageBox::Cancel) {
+    if(askSaveBecauseWorkspaceModified() != QMessageBox::Cancel)
+    {
         QString filename = QFileDialog::getOpenFileName(this, "Open workspace configuration", "", "Workspace config files (*.cangaroo)");
-        if (!filename.isNull()) {
+        if(!filename.isNull())
+        {
             loadWorkspaceFromFile(filename);
         }
     }
@@ -287,9 +322,12 @@ void MainWindow::loadWorkspace()
 
 bool MainWindow::saveWorkspace()
 {
-    if (_workspaceFileName.isEmpty()) {
+    if(_workspaceFileName.isEmpty())
+    {
         return saveWorkspaceAs();
-    } else {
+    }
+    else
+    {
         return saveWorkspaceToFile(_workspaceFileName);
     }
 }
@@ -297,9 +335,12 @@ bool MainWindow::saveWorkspace()
 bool MainWindow::saveWorkspaceAs()
 {
     QString filename = QFileDialog::getSaveFileName(this, "Save workspace configuration", "", "Workspace config files (*.cangaroo)");
-    if (!filename.isNull()) {
+    if(!filename.isNull())
+    {
         return saveWorkspaceToFile(filename);
-    } else {
+    }
+    else
+    {
         return false;
     }
 }
@@ -309,11 +350,13 @@ void MainWindow::setWorkspaceModified(bool modified)
     _workspaceModified = modified;
 
     QString title = _baseWindowTitle;
-    if (!_workspaceFileName.isEmpty()) {
+    if(!_workspaceFileName.isEmpty())
+    {
         QFileInfo fi(_workspaceFileName);
         title += " - " + fi.fileName();
     }
-    if (_workspaceModified) {
+    if(_workspaceModified)
+    {
         title += '*';
     }
     setWindowTitle(title);
@@ -321,7 +364,8 @@ void MainWindow::setWorkspaceModified(bool modified)
 
 int MainWindow::askSaveBecauseWorkspaceModified()
 {
-    if (_workspaceModified) {
+    if(_workspaceModified)
+    {
         QMessageBox msgBox;
         msgBox.setText("The current workspace has been modified.");
         msgBox.setInformativeText("Do you want to save your changes?");
@@ -329,26 +373,33 @@ int MainWindow::askSaveBecauseWorkspaceModified()
         msgBox.setDefaultButton(QMessageBox::Save);
         int result = msgBox.exec();
 
-        if (result == QMessageBox::Save) {
-            if (saveWorkspace()) {
+        if(result == QMessageBox::Save)
+        {
+            if(saveWorkspace())
+            {
                 return QMessageBox::Save;
-            } else {
+            }
+            else
+            {
                 return QMessageBox::Cancel;
             }
         }
 
         return result;
-    } else {
+    }
+    else
+    {
         return QMessageBox::Discard;
     }
 }
 
-QMainWindow *MainWindow::createTraceWindow(QString title)
+QMainWindow* MainWindow::createTraceWindow(QString title)
 {
-    if (title.isNull()) {
+    if(title.isNull())
+    {
         title = "Trace";
     }
-    QMainWindow *mm = createTab(title);
+    QMainWindow* mm = createTab(title);
     mm->setCentralWidget(new TraceWindow(mm, backend()));
     addLogWidget(mm);
 
@@ -356,56 +407,61 @@ QMainWindow *MainWindow::createTraceWindow(QString title)
     return mm;
 }
 
-QMainWindow *MainWindow::createGraphWindow(QString title)
+QMainWindow* MainWindow::createGraphWindow(QString title)
 {
-    if (title.isNull()) {
+    if(title.isNull())
+    {
         title = "Graph";
     }
-    QMainWindow *mm = createTab(title);
+    QMainWindow* mm = createTab(title);
     mm->setCentralWidget(new GraphWindow(mm, backend()));
     addLogWidget(mm);
 
     return mm;
 }
 
-void MainWindow::addGraphWidget(QMainWindow *parent)
+void MainWindow::addGraphWidget(QMainWindow* parent)
 {
-    if (!parent) {
+    if(!parent)
+    {
         parent = currentTab();
     }
-    QDockWidget *dock = new QDockWidget("Graph", parent);
+    QDockWidget* dock = new QDockWidget("Graph", parent);
     dock->setWidget(new GraphWindow(dock, backend()));
     parent->addDockWidget(Qt::BottomDockWidgetArea, dock);
 }
 
-void MainWindow::addRawTxWidget(QMainWindow *parent)
+void MainWindow::addRawTxWidget(QMainWindow* parent)
 {
-    if (!parent) {
+    if(!parent)
+    {
         parent = currentTab();
     }
-    QDockWidget *dock = new QDockWidget("Transmit View", parent);
+    QDockWidget* dock = new QDockWidget("Transmit View", parent);
     dock->setWidget(new RawTxWindow(dock, backend()));
     parent->addDockWidget(Qt::BottomDockWidgetArea, dock);
 }
 
 
-void MainWindow::addLogWidget(QMainWindow *parent)
+void MainWindow::addLogWidget(QMainWindow* parent)
 {
-    if (!parent) {
+    if(!parent)
+    {
         parent = currentTab();
     }
-    QDockWidget *dock = new QDockWidget("Log", parent);
+    QDockWidget* dock = new QDockWidget("Log", parent);
     dock->setWidget(new LogWindow(dock, backend()));
     parent->addDockWidget(Qt::BottomDockWidgetArea, dock);
 }
 
-void MainWindow::addStatusWidget(QMainWindow *parent)
+void MainWindow::addStatusWidget(QMainWindow* parent)
 {
-    if (!parent) {
+    if(!parent)
+    {
         parent = currentTab();
     }
 
-    QDockWidget *dock = new QDockWidget("CAN Status", parent);
+    QDockWidget* dock = new QDockWidget("CAN Status", parent);
     dock->setWidget(new CanStatusWindow(dock, backend()));
     parent->addDockWidget(Qt::BottomDockWidgetArea, dock);
 }
@@ -420,11 +476,14 @@ bool MainWindow::showSetupDialog()
     MeasurementSetup new_setup(&backend());
     new_setup.cloneFrom(backend().getSetup());
 
-    if (_setupDlg->showSetupDialog(new_setup)) {
+    if(_setupDlg->showSetupDialog(new_setup))
+    {
         backend().setSetup(new_setup);
         setWorkspaceModified(true);
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 }
@@ -432,20 +491,21 @@ bool MainWindow::showSetupDialog()
 void MainWindow::showAboutDialog()
 {
     QMessageBox::about(this,
-       "About cangaroo",
-       "cangaroo\n"
-       "open source can bus analyzer\n"
-       "\n"
-       "version 0.2.3\n"
-       "\n"
-       "(c)2015-2017 Hubert Denkmair\n"
-       "(c)2018-2022 Ethan Zonca"
-    );
+                       "About cangaroo",
+                       "cangaroo\n"
+                       "open source can bus analyzer\n"
+                       "\n"
+                       "version 0.2.3\n"
+                       "\n"
+                       "(c)2015-2017 Hubert Denkmair\n"
+                       "(c)2018-2022 Ethan Zonca"
+                      );
 }
 
 void MainWindow::startMeasurement()
 {
-    if (showSetupDialog()) {
+    if(showSetupDialog())
+    {
         backend().clearTrace();
         backend().startMeasurement();
     }
@@ -461,24 +521,31 @@ void MainWindow::saveTraceToFile()
     QString filters("Vector ASC (*.asc);;Linux candump (*.candump))");
     QString defaultFilter("Vector ASC (*.asc)");
 
-    QFileDialog fileDialog(0, "Save Trace to file", QDir::currentPath(), filters);
+    QFileDialog fileDialog(nullptr, "Save Trace to file", QDir::currentPath(), filters);
     fileDialog.setAcceptMode(QFileDialog::AcceptSave);
     fileDialog.setConfirmOverwrite(true);
     fileDialog.selectNameFilter(defaultFilter);
     fileDialog.setDefaultSuffix("asc");
-    if (fileDialog.exec()) {
+    if(fileDialog.exec())
+    {
         QString filename = fileDialog.selectedFiles()[0];
         QFile file(filename);
-        if (file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
+        if(file.open(QIODevice::ReadWrite | QIODevice::Truncate))
+        {
 
-            if (filename.endsWith(".candump", Qt::CaseInsensitive)) {
+            if(filename.endsWith(".candump", Qt::CaseInsensitive))
+            {
                 backend().getTrace()->saveCanDump(file);
-            } else {
+            }
+            else
+            {
                 backend().getTrace()->saveVectorAsc(file);
             }
 
             file.close();
-        } else {
+        }
+        else
+        {
             // TODO error message
         }
 

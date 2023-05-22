@@ -22,10 +22,20 @@ macx:OBJECTS_DIR = ../build/o/mac
 
 SOURCES += main.cpp\
     mainwindow.cpp \
+    mainwindow_terminal.cpp \
+    settingsdialog.cpp \
+    console.cpp
 
 HEADERS  += mainwindow.h \
+    mainwindow_terminal.h \
+    settingsdialog.h \
+    console.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    mainwindow_terminal.ui \
+    settingsdialog.ui \
+    mainwindow_terminal.ui \
+    settingsdialog.ui
 
 RESOURCES = cangaroo.qrc
 
