@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>843</width>
+    <height>657</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,7 +45,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>400</width>
+     <width>843</width>
      <height>23</height>
     </rect>
    </property>
@@ -66,6 +66,8 @@
     <addaction name="actionClear"/>
     <addaction name="actionCanDevice"/>
     <addaction name="actionCallDevices"/>
+    <addaction name="actioncangaroo"/>
+    <addaction name="actionCanAlyst"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -208,6 +210,19 @@
   <action name="actionCallDevices">
    <property name="text">
     <string>CallAllDevices</string>
+   </property>
+  </action>
+  <action name="actioncangaroo">
+   <property name="text">
+    <string>cangaroo</string>
+   </property>
+  </action>
+  <action name="actionCanAlyst">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>CanAlyst</string>
    </property>
   </action>
  </widget>

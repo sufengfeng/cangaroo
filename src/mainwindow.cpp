@@ -89,9 +89,11 @@ MainWindow::MainWindow(QWidget* parent) :
     _setupDlg = new SetupDialog(Backend::instance(), nullptr); // NOTE: must be called after drivers/plugins are initialized
     m_sMainWindow_terminal = new MainWindow_terminal;
     //    connect(m_ui->actionConfigure, &QAction::triggered, this, &MainWindow_terminal::showConfig);
-    connect(m_sMainWindow_terminal, MainWindow_terminal::showCangaroo, this, MainWindow::show);
-    connect(backend().getTrace(), CanTrace::messageEnqueued, m_sMainWindow_terminal, MainWindow_terminal::SlotReveiveCanData);
-    connect(this, MainWindow::EmitSignalCanConnectStatus, m_sMainWindow_terminal, MainWindow_terminal::CanConnectStatusChanged);
+    connect(m_sMainWindow_terminal, &MainWindow_terminal::EmitSignalShowCangaroo, this, &MainWindow::show);
+    connect(backend().getTrace(), &CanTrace::messageEnqueued, m_sMainWindow_terminal, &MainWindow_terminal::SlotReveiveCanData);
+    connect(this, &MainWindow::EmitSignalCanConnectStatus, m_sMainWindow_terminal, &MainWindow_terminal::CanConnectStatusChanged);
+    connect(m_sMainWindow_terminal, &MainWindow_terminal::EmitSignalOpenCanDevice, this, &MainWindow::startMeasurement);
+    connect(m_sMainWindow_terminal, &MainWindow_terminal::EmitSignalCloseCanDevice, this, &MainWindow::stopMeasurement);
 }
 
 MainWindow::~MainWindow()

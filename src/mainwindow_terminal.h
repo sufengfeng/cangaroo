@@ -83,7 +83,9 @@ public slots:
     void SlotReveiveCanData(int idx);
     void CanConnectStatusChanged(int status);
 signals:
-    void showCangaroo(void);
+    void EmitSignalShowCangaroo(void);
+    void EmitSignalCloseCanDevice(void);
+    void EmitSignalOpenCanDevice();
 protected:
     void keyPressEvent(QKeyEvent* e);
 private slots:
@@ -99,6 +101,8 @@ private slots:
     bool IsCanDevice(void);
     void CallAllCanDevices(void);
     int GetCanId(void);
+    void SlotShowCangaroo(void);
+    void SlotShowCanalyst(void);
 private:
     void initActionsConnections();
     void OpenDevice();
@@ -114,6 +118,7 @@ private:
     int m_nCanInterfaceId;
     QList<QString>  m_sLastCommandList;
     int m_nCurrentIndexCommandList;
+    QDockWidget* m_sDockRight;
 };
 
 #endif // MAINWINDOW_H

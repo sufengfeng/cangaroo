@@ -17,7 +17,7 @@
 #include <driver/CanInterface.h>
 #include <QLabel>
 #include <QMessageBox>
-
+#include "qmywidget.h"
 //! [0]
 MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     QMainWindow(parent),
@@ -33,6 +33,17 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     m_ui->setupUi(this);
     m_console = m_ui->widget;
     m_console->setEnabled(false);
+    //浮动窗口
+    m_sDockRight = new QDockWidget(this);
+    addDockWidget(Qt::RightDockWidgetArea, m_sDockRight);
+
+    QMyWidget* widge = new QMyWidget;
+    widge->size = QSize(300, 250);
+    m_sDockRight->setWidget(widge);
+    TraceWindow* trace = new TraceWindow(widge, backend());
+    m_sDockRight->hide();
+
+
     //    setCentralWidget(m_console);
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);
@@ -92,7 +103,7 @@ void MainWindow_terminal::OpenDevice()
 {
     if(IsCanDevice())
     {
-        emit showCangaroo();
+        emit EmitSignalOpenCanDevice();
     }
     else
     {
@@ -133,7 +144,7 @@ void MainWindow_terminal::CloseDevice()
 {
     if(IsCanDevice())
     {
-        emit showCangaroo();
+        emit EmitSignalCloseCanDevice();
     }
     else
     {
@@ -219,17 +230,21 @@ void MainWindow_terminal::writeData(const QByteArray& data)
     if(data.contains('\r'))
     {
         tmpByteArray.append(data);
-        if(m_sLastCommandList.contains(tmpByteArray) == false && tmpByteArray.length() > 1)
+        if(tmpByteArray.length() > 1)
         {
+            if(m_sLastCommandList.contains(QString(tmpByteArray)))  //包含则移到最后位置
+            {
+                m_sLastCommandList.removeOne(QString(tmpByteArray));
+            }
             m_sLastCommandList.append(QString(tmpByteArray));
             if(m_sLastCommandList.length() > 10)
             {
                 m_sLastCommandList.removeFirst();
             }
+            m_ui->lineEdit->setText(QString(tmpByteArray));
+            m_nCurrentIndexCommandList = m_sLastCommandList.length() - 1;
         }
-        m_ui->lineEdit->setText(QString(tmpByteArray));
         tmpByteArray.clear();
-
     }
     else
     {
@@ -298,17 +313,38 @@ void MainWindow_terminal::initActionsConnections()
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow_terminal::about);
     //    connect(m_ui->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
     connect(m_ui->actionCallDevices, &QAction::triggered, this, &MainWindow_terminal::CallAllCanDevices);
+
+    connect(m_ui->actioncangaroo, &QAction::triggered, this, &MainWindow_terminal::SlotShowCangaroo);
+    connect(m_ui->actionCanAlyst, &QAction::triggered, this, &MainWindow_terminal::SlotShowCanalyst);
 }
 #include "QDebug"
 void MainWindow_terminal::showConfig(void)
 {
     if(IsCanDevice())
     {
-        emit showCangaroo();
+        emit EmitSignalOpenCanDevice();
     }
     else
     {
         m_settings->show();
+    }
+
+}
+
+void MainWindow_terminal::SlotShowCangaroo(void)
+{
+    emit EmitSignalShowCangaroo();
+}
+
+void MainWindow_terminal::SlotShowCanalyst(void)
+{
+    if(m_ui->actionCanAlyst->isChecked())
+    {
+        this->m_sDockRight->show();
+    }
+    else
+    {
+        this->m_sDockRight->hide();
     }
 
 }

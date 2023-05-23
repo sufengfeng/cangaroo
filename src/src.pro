@@ -24,11 +24,13 @@ SOURCES += main.cpp\
     mainwindow.cpp \
     mainwindow_terminal.cpp \
     settingsdialog.cpp \
-    console.cpp
+    console.cpp \
+    qmywidget.cpp
 HEADERS  += mainwindow.h \
     mainwindow_terminal.h \
     settingsdialog.h \
-    console.h
+    console.h \
+    qmywidget.h
 
 FORMS    += mainwindow.ui \
     mainwindow_terminal.ui \

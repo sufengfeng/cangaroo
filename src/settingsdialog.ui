@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>281</width>
-    <height>262</height>
+    <width>341</width>
+    <height>288</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -163,7 +163,7 @@
          <string>Local echo</string>
         </property>
         <property name="checked">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>
