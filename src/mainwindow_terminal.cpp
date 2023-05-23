@@ -31,16 +31,16 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 {
     //! [0]
     m_ui->setupUi(this);
+    m_console = m_ui->widget;
     m_console->setEnabled(false);
-    setCentralWidget(m_console);
-
+    //    setCentralWidget(m_console);
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);
     m_ui->actionQuit->setEnabled(true);
     m_ui->actionConfigure->setEnabled(true);
-
+    m_ui->actionCallDevices->setEnabled(false);
     m_ui->statusBar->addWidget(m_status);
-
+    m_nCurrentIndexCommandList = 0;
     initActionsConnections();
 
     connect(m_serial, &QSerialPort::errorOccurred, this, &MainWindow_terminal::handleError);
@@ -60,6 +60,44 @@ MainWindow_terminal::~MainWindow_terminal()
 
     delete m_settings;
     delete m_ui;
+}
+void MainWindow_terminal::CanConnectStatusChanged(int status)
+{
+    const SettingsDialog::Settings p = m_settings->settings();
+    if(status == 1)     //connected
+    {
+        m_console->setEnabled(true);
+        m_console->setLocalEchoEnabled(p.localEchoEnabled);
+        m_ui->actionConnect->setEnabled(false);
+        m_ui->actionDisconnect->setEnabled(true);
+        m_ui->actionConfigure->setEnabled(false);
+        m_ui->actionCallDevices->setEnabled(true);
+        //        showStatusMessage(tr("Connected to %1 : %2, %3, %4, %5, %6")
+        //                          .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
+        //                          .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
+        showStatusMessage(tr("Connected to can device "));
+    }
+    else                //disconnected
+    {
+        m_console->setEnabled(false);
+        m_ui->actionConnect->setEnabled(true);
+        m_ui->actionDisconnect->setEnabled(false);
+        m_ui->actionConfigure->setEnabled(true);
+        m_ui->actionCallDevices->setEnabled(false);
+        showStatusMessage(tr("Disconnected"));
+    }
+}
+//! [4]
+void MainWindow_terminal::OpenDevice()
+{
+    if(IsCanDevice())
+    {
+        emit showCangaroo();
+    }
+    else
+    {
+        openSerialPort();
+    }
 }
 
 //! [4]
@@ -91,7 +129,17 @@ void MainWindow_terminal::openSerialPort()
     }
 }
 //! [4]
-
+void MainWindow_terminal::CloseDevice()
+{
+    if(IsCanDevice())
+    {
+        emit showCangaroo();
+    }
+    else
+    {
+        closeSerialPort();
+    }
+}
 //! [5]
 void MainWindow_terminal::closeSerialPort()
 {
@@ -109,71 +157,51 @@ void MainWindow_terminal::closeSerialPort()
 
 void MainWindow_terminal::about()
 {
-    QMessageBox::about(this, tr("About Simple Terminal"),
+    QMessageBox::about(this, tr("About GCAN-Term"),
                        tr("The <b>Simple Terminal</b> example demonstrates how to "
                           "use the Qt Serial Port module in modern GUI applications "
                           "using Qt, with a menu bar, toolbars, and a status bar."));
 }
+int MainWindow_terminal::GetCanId(void)
+{
+    return m_ui->spinBox->value();
+}
 void MainWindow_terminal::SendMessageByCan(const QByteArray& data)
 {
-    //    qDebug() << data;
     CanMessage msg;
 
-    bool en_extended = false;
-    bool en_rtr = false;
 
-    //    uint8_t data_int[64];
-    int data_ctr = 0;
-
-    //    data_int[data_ctr++] = ui->fieldByte0_0->text().toUpper().toInt(NULL, 16);
-
-    uint32_t address = 0x80;
-
-    uint8_t dlc = data.length();
+    uint32_t address = 0x170 + GetCanId();
+    int sendIndex = 0;
+    int dlc = data.length();
     if(dlc > 8)
     {
         dlc = 8;
     }
-    // Set payload data
-    for(int i = 0; i < dlc; i++)
+    while(sendIndex < data.length())
     {
-        //        data_int[data_ctr++] = data[i];
-        msg.setDataAt(i, data[i]);
+        // Set payload data
+        for(uint8_t i = 0; (i < 8 && sendIndex < data.length()); i++)
+        {
+            msg.setDataAt(i, data[sendIndex]);
+            sendIndex++;
+        }
+        msg.setId(address);
+        msg.setLength(dlc);
+        msg.setExtended(false);
+        msg.setRTR(false);
+        msg.setErrorFrame(false);
+        CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
+        if(canInterfaceIdList.isEmpty() == false)
+        {
+            CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
+            intf->sendMessage(msg);
+        }
+        else
+        {
+            qDebug() << "no device";
+        }
     }
-
-    msg.setId(address);
-    msg.setLength(dlc);
-
-    msg.setExtended(en_extended);
-    msg.setRTR(en_rtr);
-    msg.setErrorFrame(false);
-
-    //    if(ui->checkbox_BRS->isChecked())
-    //    {
-    //        msg.setBRS(true);
-    //    }
-    //    if(ui->checkbox_FD->isChecked())
-    //    {
-    //        msg.setFD(true);
-    //    }
-
-    CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
-    if(canInterfaceIdList.isEmpty() == false)
-    {
-        CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
-        intf->sendMessage(msg);
-    }
-    else
-    {
-        qDebug() << "no device";
-    }
-
-    //    char outmsg[256];
-    //    snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
-    //             msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
-    //             msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
-    //    log_info(outmsg);
-
 }
 int MainWindow_terminal::SetCanInterfaceId(int interfaceId)
 {
@@ -186,6 +214,27 @@ bool MainWindow_terminal::IsCanDevice(void)
 //! [6]
 void MainWindow_terminal::writeData(const QByteArray& data)
 {
+    static QByteArray tmpByteArray;
+
+    if(data.contains('\r'))
+    {
+        tmpByteArray.append(data);
+        if(m_sLastCommandList.contains(tmpByteArray) == false && tmpByteArray.length() > 1)
+        {
+            m_sLastCommandList.append(QString(tmpByteArray));
+            if(m_sLastCommandList.length() > 10)
+            {
+                m_sLastCommandList.removeFirst();
+            }
+        }
+        m_ui->lineEdit->setText(QString(tmpByteArray));
+        tmpByteArray.clear();
+
+    }
+    else
+    {
+        tmpByteArray.append(data);
+    }
     if(IsCanDevice())
     {
         SendMessageByCan(data);
@@ -208,6 +257,8 @@ Backend& MainWindow_terminal::backend()
 {
     return Backend::instance();
 }
+
+
 //! [7]
 void MainWindow_terminal::SlotReveiveCanData(int idx)
 {
@@ -215,12 +266,15 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
 
     const CanMessage* p_sCanMessage = p_sTrace->getMessage(idx);
     //    qDebug() << "test" << idx << p_sCanMessage->getLength() << p_sCanMessage->getByte(0);
-    QByteArray data ;
-    for(int i = 0; i < p_sCanMessage->getLength(); i++)
+    if(p_sCanMessage->getId() == (0x170 + GetCanId()))
     {
-        data.append(p_sCanMessage->getByte(i));
+        QByteArray data ;
+        for(int i = 0; i < p_sCanMessage->getLength(); i++)
+        {
+            data.append(p_sCanMessage->getByte(i));
+        }
+        m_console->putData(data);
     }
-    m_console->putData(data);
 }
 //! [8]
 void MainWindow_terminal::handleError(QSerialPort::SerialPortError error)
@@ -235,14 +289,15 @@ void MainWindow_terminal::handleError(QSerialPort::SerialPortError error)
 
 void MainWindow_terminal::initActionsConnections()
 {
-    connect(m_ui->actionConnect, &QAction::triggered, this, &MainWindow_terminal::openSerialPort);
-    connect(m_ui->actionDisconnect, &QAction::triggered, this, &MainWindow_terminal::closeSerialPort);
+    connect(m_ui->actionConnect, &QAction::triggered, this, &MainWindow_terminal::OpenDevice);
+    connect(m_ui->actionDisconnect, &QAction::triggered, this, &MainWindow_terminal::CloseDevice);
     connect(m_ui->actionQuit, &QAction::triggered, this, &MainWindow_terminal::close);
     //    connect(m_ui->actionConfigure, &QAction::triggered, m_settings, &SettingsDialog::show);
     connect(m_ui->actionConfigure, &QAction::triggered, this, &MainWindow_terminal::showConfig);
     connect(m_ui->actionClear, &QAction::triggered, m_console, &Console::clear);
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow_terminal::about);
-    connect(m_ui->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
+    //    connect(m_ui->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
+    connect(m_ui->actionCallDevices, &QAction::triggered, this, &MainWindow_terminal::CallAllCanDevices);
 }
 #include "QDebug"
 void MainWindow_terminal::showConfig(void)
@@ -257,8 +312,86 @@ void MainWindow_terminal::showConfig(void)
     }
 
 }
+void MainWindow_terminal::CallAllCanDevices(void)
+{
+
+    CanMessage msg;
+    uint32_t address = 0x160;
+    int dlc = 8;
+    if(dlc > 8)
+    {
+        dlc = 8;
+    }
+    // Set payload data
+    //    for(uint8_t i = 0; i < dlc; i++)
+    //    {
+
+    //    }
+    msg.setDataAt(0, 0x01);
+    msg.setId(address);
+    msg.setLength(dlc);
+    msg.setExtended(false);
+    msg.setRTR(false);
+    msg.setErrorFrame(false);
+    CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
+    if(canInterfaceIdList.isEmpty() == false)
+    {
+        CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
+        intf->sendMessage(msg);
+    }
+    else
+    {
+        qDebug() << "no device";
+    }
+}
 
 void MainWindow_terminal::showStatusMessage(const QString& message)
 {
     m_status->setText(message);
+}
+void MainWindow_terminal::keyPressEvent(QKeyEvent* e)
+{
+    switch(e->key())
+    {
+        case Qt::Key_Return:
+            writeData(m_ui->lineEdit->text().toLatin1().append('\r'));
+            m_sLastCommandList.append(m_ui->lineEdit->text());
+            if(m_sLastCommandList.length() > 10)
+            {
+                m_sLastCommandList.removeFirst();
+            }
+            m_ui->lineEdit->clear();
+            break;
+        case Qt::Key_Up:
+            if(m_sLastCommandList.isEmpty() == false)
+            {
+                m_nCurrentIndexCommandList--;
+                if(m_nCurrentIndexCommandList < 0)
+                {
+                    m_nCurrentIndexCommandList = 0;
+                }
+                QString strTmp = m_sLastCommandList.at(m_nCurrentIndexCommandList);
+                QByteArray arrayTmp = strTmp.toLatin1();
+
+                m_ui->lineEdit->setText(QString(arrayTmp.left(arrayTmp.length() - 1)));
+            }
+            break;
+        case Qt::Key_Down:
+            if(m_sLastCommandList.isEmpty() == false)
+            {
+                m_nCurrentIndexCommandList++;
+                if(m_nCurrentIndexCommandList >= m_sLastCommandList.length())
+                {
+                    m_nCurrentIndexCommandList = m_sLastCommandList.length() - 1;
+                }
+                QString strTmp = m_sLastCommandList.at(m_nCurrentIndexCommandList);
+                QByteArray arrayTmp = strTmp.toLatin1();
+
+                m_ui->lineEdit->setText(QString(arrayTmp.left(arrayTmp.length() - 1)));
+            }
+            break;
+        default:
+            ;
+    }
+
 }

@@ -81,8 +81,11 @@ public:
     Backend& backend();
 public slots:
     void SlotReveiveCanData(int idx);
+    void CanConnectStatusChanged(int status);
 signals:
     void showCangaroo(void);
+protected:
+    void keyPressEvent(QKeyEvent* e);
 private slots:
     void openSerialPort();
     void closeSerialPort();
@@ -94,9 +97,12 @@ private slots:
     void handleError(QSerialPort::SerialPortError error);
     void showConfig();
     bool IsCanDevice(void);
+    void CallAllCanDevices(void);
+    int GetCanId(void);
 private:
     void initActionsConnections();
-
+    void OpenDevice();
+    void CloseDevice();
 private:
     void showStatusMessage(const QString& message);
 
@@ -106,6 +112,8 @@ private:
     SettingsDialog* m_settings = nullptr;
     QSerialPort* m_serial = nullptr;
     int m_nCanInterfaceId;
+    QList<QString>  m_sLastCommandList;
+    int m_nCurrentIndexCommandList;
 };
 
 #endif // MAINWINDOW_H

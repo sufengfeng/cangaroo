@@ -50,7 +50,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
-
+signals:
+    void EmitSignalCanConnectStatus(int status);
 protected:
     void closeEvent(QCloseEvent* event) Q_DECL_OVERRIDE;
 

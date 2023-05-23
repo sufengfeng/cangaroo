@@ -91,6 +91,7 @@ MainWindow::MainWindow(QWidget* parent) :
     //    connect(m_ui->actionConfigure, &QAction::triggered, this, &MainWindow_terminal::showConfig);
     connect(m_sMainWindow_terminal, MainWindow_terminal::showCangaroo, this, MainWindow::show);
     connect(backend().getTrace(), CanTrace::messageEnqueued, m_sMainWindow_terminal, MainWindow_terminal::SlotReveiveCanData);
+    connect(this, MainWindow::EmitSignalCanConnectStatus, m_sMainWindow_terminal, MainWindow_terminal::CanConnectStatusChanged);
 }
 
 MainWindow::~MainWindow()
@@ -512,12 +513,14 @@ void MainWindow::startMeasurement()
     {
         backend().clearTrace();
         backend().startMeasurement();
+        emit EmitSignalCanConnectStatus(1);
     }
 }
 
 void MainWindow::stopMeasurement()
 {
     backend().stopMeasurement();
+    emit EmitSignalCanConnectStatus(0);
 }
 
 void MainWindow::saveTraceToFile()
