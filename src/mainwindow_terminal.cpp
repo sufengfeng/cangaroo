@@ -43,8 +43,19 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     TraceWindow* trace = new TraceWindow(widge, backend());
     m_sDockRight->hide();
 
+    //左侧浮动窗口
+    //    QDockWidget* m_sDockLeft = new QDockWidget(this);
+    //    addDockWidget(Qt::RightDockWidgetArea, m_sDockLeft);
 
-    //    setCentralWidget(m_console);
+    //    QMyWidget* widgeDeviceList = new QMyWidget;
+    //    widge->size = QSize(200, 400);
+    //    m_sDockLeft->setWidget(widgeDeviceList);
+    //    QListWidget* listWidget = new QListWidget(widgeDeviceList);
+    //    listWidget->addItem("devie01");
+    //    listWidget->addItem("devie02");
+    //    listWidget->addItem("devie03");
+    //    m_sDockLeft->hide();
+
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);
     m_ui->actionQuit->setEnabled(true);
@@ -61,7 +72,8 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     //! [2]
     connect(m_console, &Console::getData, this, &MainWindow_terminal::writeData);
     //! [3]
-
+    QIcon icon(":/assets/cangaroo.png");
+    setWindowIcon(icon);
 }
 //! [3]
 
@@ -169,9 +181,9 @@ void MainWindow_terminal::closeSerialPort()
 void MainWindow_terminal::about()
 {
     QMessageBox::about(this, tr("About GCAN-Term"),
-                       tr("The <b>Simple Terminal</b> example demonstrates how to "
-                          "use the Qt Serial Port module in modern GUI applications "
-                          "using Qt, with a menu bar, toolbars, and a status bar."));
+                       tr("Version: <b>V1.1</b><br>"
+                          "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus"
+                         ));
 }
 int MainWindow_terminal::GetCanId(void)
 {
@@ -244,6 +256,7 @@ void MainWindow_terminal::writeData(const QByteArray& data)
             m_ui->lineEdit->setText(QString(tmpByteArray));
             m_nCurrentIndexCommandList = m_sLastCommandList.length() - 1;
         }
+        m_console->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);   //将光标移动到文本末尾
         tmpByteArray.clear();
     }
     else
