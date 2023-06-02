@@ -69,7 +69,7 @@ QT_END_NAMESPACE
 
 class Console;
 class SettingsDialog;
-
+class MainWindow_Download;
 class MainWindow_terminal : public QMainWindow
 {
     Q_OBJECT
@@ -82,6 +82,7 @@ public:
 public slots:
     void SlotReveiveCanData(int idx);
     void CanConnectStatusChanged(int status);
+    int Slot_SendCanMessage(CanMessage* p_sCanMessage);
 signals:
     void EmitSignalShowCangaroo(void);
     void EmitSignalCloseCanDevice(void);
@@ -119,6 +120,7 @@ private:
     QList<QString>  m_sLastCommandList;
     int m_nCurrentIndexCommandList;
     QDockWidget* m_sDockRight;
+    MainWindow_Download* m_sMainWindow_Download;
 };
 
 #endif // MAINWINDOW_H

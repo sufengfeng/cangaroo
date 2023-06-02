@@ -18,6 +18,8 @@
 #include <QLabel>
 #include <QMessageBox>
 #include "qmywidget.h"
+#include "mainwindow_download.h"
+#include "workerdownloadthread.h"
 //! [0]
 MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     QMainWindow(parent),
@@ -42,7 +44,7 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     m_sDockRight->setWidget(widge);
     TraceWindow* trace = new TraceWindow(widge, backend());
     m_sDockRight->hide();
-
+    m_sMainWindow_Download = new MainWindow_Download;
     //左侧浮动窗口
     //    QDockWidget* m_sDockLeft = new QDockWidget(this);
     //    addDockWidget(Qt::RightDockWidgetArea, m_sDockLeft);
@@ -67,6 +69,7 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 
     connect(m_serial, &QSerialPort::errorOccurred, this, &MainWindow_terminal::handleError);
 
+    connect(m_sMainWindow_Download->m_sWorkerDownloadThread, &WorkerDownloadThread::Signal_SendCanMessage, this, &MainWindow_terminal::Slot_SendCanMessage);
     //! [2]
     connect(m_serial, &QSerialPort::readyRead, this, &MainWindow_terminal::readData);
     //! [2]
@@ -77,13 +80,55 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 }
 //! [3]
 
+
 MainWindow_terminal::~MainWindow_terminal()
 {
     backend().stopMeasurement();
-
+    delete m_sMainWindow_Download;
     delete m_settings;
+    delete m_sDockRight;
     delete m_ui;
 }
+
+int MainWindow_terminal::Slot_SendCanMessage(CanMessage* p_sCanMessage)
+{
+    int iRet = 0;
+    CanMessage msg;
+    int sendIndex = 0;
+    int dlc = p_sCanMessage->getLength();
+    if(dlc > 8)
+    {
+        dlc = 8;
+    }
+    while(sendIndex < p_sCanMessage->getLength())
+    {
+        // Set payload data
+        for(uint8_t i = 0; (i < 8 && sendIndex < p_sCanMessage->getLength()); i++)
+        {
+            msg.setDataAt(i, p_sCanMessage->getByte(sendIndex));
+            sendIndex++;
+        }
+        msg.setId(p_sCanMessage->getId());
+        msg.setLength(dlc);
+        msg.setExtended(false);
+        msg.setRTR(false);
+        msg.setErrorFrame(false);
+        CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
+        if(canInterfaceIdList.isEmpty() == false)
+        {
+            CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
+            intf->sendMessage(msg);
+        }
+        else
+        {
+            qDebug() << "no device";
+            iRet = -1;
+        }
+    }
+    return iRet;
+}
+
+
 void MainWindow_terminal::CanConnectStatusChanged(int status)
 {
     const SettingsDialog::Settings p = m_settings->settings();
@@ -192,8 +237,6 @@ int MainWindow_terminal::GetCanId(void)
 void MainWindow_terminal::SendMessageByCan(const QByteArray& data)
 {
     CanMessage msg;
-
-
     uint32_t address = 0x170 + GetCanId();
     int sendIndex = 0;
     int dlc = data.length();
@@ -303,6 +346,7 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
         }
         m_console->putData(data);
     }
+    m_sMainWindow_Download->HandleCanMessage(p_sCanMessage);
 }
 //! [8]
 void MainWindow_terminal::handleError(QSerialPort::SerialPortError error)
@@ -329,6 +373,7 @@ void MainWindow_terminal::initActionsConnections()
 
     connect(m_ui->actioncangaroo, &QAction::triggered, this, &MainWindow_terminal::SlotShowCangaroo);
     connect(m_ui->actionCanAlyst, &QAction::triggered, this, &MainWindow_terminal::SlotShowCanalyst);
+    connect(m_ui->actionDownload, &QAction::triggered, m_sMainWindow_Download, &MainWindow_Download::show);
 }
 #include "QDebug"
 void MainWindow_terminal::showConfig(void)

@@ -46,7 +46,7 @@
      <x>0</x>
      <y>0</y>
      <width>843</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuCalls">
@@ -68,6 +68,7 @@
     <addaction name="actionCallDevices"/>
     <addaction name="actioncangaroo"/>
     <addaction name="actionCanAlyst"/>
+    <addaction name="actionDownload"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -222,6 +223,11 @@
    </property>
    <property name="text">
     <string>CanAlyst</string>
+   </property>
+  </action>
+  <action name="actionDownload">
+   <property name="text">
+    <string>Download</string>
    </property>
   </action>
  </widget>

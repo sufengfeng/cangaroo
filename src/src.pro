@@ -25,18 +25,23 @@ SOURCES += main.cpp\
     mainwindow_terminal.cpp \
     settingsdialog.cpp \
     console.cpp \
-    qmywidget.cpp
+    qmywidget.cpp \
+    mainwindow_download.cpp \
+    workerdownloadthread.cpp
 HEADERS  += mainwindow.h \
     mainwindow_terminal.h \
     settingsdialog.h \
     console.h \
-    qmywidget.h
+    qmywidget.h \
+    mainwindow_download.h \
+    workerdownloadthread.h
 
 FORMS    += mainwindow.ui \
     mainwindow_terminal.ui \
     settingsdialog.ui \
     mainwindow_terminal.ui \
-    settingsdialog.ui
+    settingsdialog.ui \
+    mainwindow_download.ui
 
 RESOURCES = cangaroo.qrc
 
