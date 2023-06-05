@@ -47,7 +47,23 @@ typedef enum  _TAG_ENUM_UPDATE_MOTORS_STATE
     MUPDATE_ERROR,
 } EUpdateStatus;
 
+typedef enum STsSUB_SYS_STDID_
+{
 
+    //前面板升级
+    SUB_FRONT_UPDATE_START = 0xA0U,//升级启动
+    SUB_FRONT_UPDATE_SEND = 0xC0U,//升级发送固件
+    SUB_FRONT_UPDATE_RES = 0xB0U,//升级命令反馈
+    SUB_FRONT_UPDATE_SUCC_RES = 0xD0U,//升级完成反馈
+
+    //后面板升级
+    SUB_BACK_UPDATE_START = 0xA2U,//升级启动
+    SUB_BACK_UPDATE_SEND = 0xC2U,//升级发送固件
+    SUB_BACK_UPDATE_RES = 0xB2U,//升级命令反馈
+    SUB_BACK_UPDATE_SUCC_RES = 0xD2U,//升级完成反馈
+
+    SUB_GET_VERSION = 0x01U,//升级工具获取版本号
+} SUB_SYS_STDID; //与MCU通信的CAN消息节点定义
 typedef struct _TAG_MOTOR_UPDATA_CTRL
 {
     unint32  sendMotorID;
@@ -89,25 +105,27 @@ public:
     explicit WorkerDownloadThread();
     ~WorkerDownloadThread();
 
-    void StartUpdateHardWare(QString filePathName);
+    void StartUpdateHardWare(QString filePathName, int canid, int updateType);
     void HandleCanMessage(const CanMessage* p_sCanMessage);
-
+    void StopDownload(void);
 signals:
     void Signal_progress(const int value, QString str);
-    int Signal_SendCanMessage(CanMessage* p_sCanMessage);
+    int Signal_SendCanMessage(CanMessage* psCanMessage);
 protected:
     void    run();    //虚函数
 private:
-    void stop();
     void UpdateSubBoardMain(void);
     unint32 SubBoardUpdateStateReady(void);
     unint32 SubBoardUpdateInit(void);
     void SubBoardUpdate(void);
     unint32 SubBoardUpdateEnd(void);
-    void bsp_SubBoard_Update_InitCmd(u32 stdID, u32 binSize, u32 binCheckSum, u32 type);
-    void SubBoardUpdateSendPackData(u32 stdID, unint32 dataIndex, unint32 dataSend, u32 type);
+    void bsp_SubBoard_Update_Start(int canId, int updateType);
+    void bsp_SubBoard_Update_InitCmd(u32 stdID, u32 binSize, u32 binCheckSum);
+    void SubBoardUpdateSendPackData(u32 stdID, unint32 dataIndex, unint32 dataSend);
 private:
     bool    m_stopFlag;
+    uint32_t m_nCanID;
+    uint32_t m_nUpdateType;
     QString m_sFilePathName;
     uint32_t m_nProceValue;
     QFileInfo* m_sQFileInfo ;

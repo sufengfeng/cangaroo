@@ -29,6 +29,8 @@ public:
     void HandleCanMessage(const CanMessage* p_sCanMessage);
 public slots:
     bool Slot_UpdateProcess(const int counter, QString str);
+    void closeEvent(QCloseEvent* event);
+
 public:
     WorkerDownloadThread* m_sWorkerDownloadThread;
 private:
@@ -36,7 +38,6 @@ private:
 
     bool isUntitled;                                //true表示文件没被保存过,false表示有
     QString m_sFilePathName;                               //当前文件的路径
-
 
 };
 

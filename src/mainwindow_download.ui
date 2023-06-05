@@ -25,7 +25,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QSpinBox" name="spinBox">
+       <widget class="QSpinBox" name="spinBox_CanID">
         <property name="minimum">
          <number>1</number>
         </property>
@@ -45,7 +45,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="comboBox">
+       <widget class="QComboBox" name="comboBox_UpdateType">
         <item>
          <property name="text">
           <string>APP</string>

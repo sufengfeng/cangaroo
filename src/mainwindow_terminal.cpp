@@ -118,6 +118,13 @@ int MainWindow_terminal::Slot_SendCanMessage(CanMessage* p_sCanMessage)
         {
             CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
             intf->sendMessage(msg);
+
+            char outmsg[256];
+            snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
+                     msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
+                     msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
+            qDebug() << outmsg;
+            //            log_info(outmsg);
         }
         else
         {
@@ -226,7 +233,7 @@ void MainWindow_terminal::closeSerialPort()
 void MainWindow_terminal::about()
 {
     QMessageBox::about(this, tr("About GCAN-Term"),
-                       tr("Version: <b>V1.1</b><br>"
+                       tr("Version: <b>V1.2</b><br>"
                           "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus"
                          ));
 }

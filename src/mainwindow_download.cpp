@@ -11,7 +11,7 @@ MainWindow_Download::MainWindow_Download(QWidget* parent) :
     //    ui->tabWidget->setVisible(false);
     connect(ui->pushButton_Open, &QPushButton::clicked, this, &MainWindow_Download::OpenFile);
     connect(ui->pushButton_Download, &QPushButton::clicked, this, &MainWindow_Download::DownloadFile);
-    //    connect(m_sWorkerDownloadThread, &WorkerDownloadThread::Signal_progress, this, &MainWindow_Download::Slot_UpdateProcess);
+    connect(m_sWorkerDownloadThread, &WorkerDownloadThread::Signal_progress, this, &MainWindow_Download::Slot_UpdateProcess);
 }
 
 MainWindow_Download::~MainWindow_Download()
@@ -19,11 +19,24 @@ MainWindow_Download::~MainWindow_Download()
     delete m_sWorkerDownloadThread;
     delete ui;
 }
-
+void MainWindow_Download::closeEvent(QCloseEvent* event)
+{
+    m_sWorkerDownloadThread->StopDownload();
+    event->accept();
+}
 bool MainWindow_Download::Slot_UpdateProcess(const int counter, QString str)
 {
     ui->progressBar->setValue(counter);
-    ui->textBrowser_LogVeiw->append(str);
+    if(str.isEmpty())
+    {
+        ;
+    }
+    else
+    {
+        ui->textBrowser_LogVeiw->append(str);
+    }
+
+    //    qDebug() << __func__ << __LINE__ << counter << str;
     return true;
 }
 void MainWindow_Download::OpenFile(void)
@@ -78,7 +91,9 @@ void MainWindow_Download::OpenFile(void)
 void MainWindow_Download::DownloadFile(void)
 {
     ui->tabWidget->setCurrentIndex(0);
-    m_sWorkerDownloadThread->StartUpdateHardWare(m_sFilePathName);
+    int canid = ui->spinBox_CanID->value();
+    int updateType = ui->comboBox_UpdateType->currentIndex() + 1;
+    m_sWorkerDownloadThread->StartUpdateHardWare(m_sFilePathName, canid, updateType);
 }
 
 
