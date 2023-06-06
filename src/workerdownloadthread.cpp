@@ -26,47 +26,30 @@ void WorkerDownloadThread::StartUpdateHardWare(QString filePathName, int canid, 
 }
 void WorkerDownloadThread::StopDownload(void)
 {
-    SMotorUpdate* pMotor = &subBoardUpdate[0];//tmpMotorID=5
+    SMotorUpdate* pMotor = &subBoardUpdate;//tmpMotorID=5
     m_stopFlag = true;
     pMotor->eSendSt = MUPDATE_SENDED_SUCC;
-
     //    this->wait();
 }
-
-
 void WorkerDownloadThread::run()
 {
     //该线程管理类对应的线程实际运行代码位置
     while(1)
     {
-        //        int value = 0;
         while(!m_stopFlag)
         {
-            //            m_nUpdateType=1;
-            //            bsp_SubBoard_Update_Start(m_nCanID, m_nUpdateType);
-            //            m_stopFlag = true;
             QTime time;
             time.start();
             UpdateSubBoardMain();
             emit Signal_progress(m_nProceValue, QString(tr("update total time:[%1]s")).arg(time.elapsed() / 1000.0));
             StopDownload();
-            //            //do something
-            //            value++;
-            //            emit Signal_progress(value, QString("value:") + value);
-            //            //usleep(100);
-            //            msleep(100);
-
-            //            if(value >= 100)
-            //            {
-            //                stop();
-            //            }
         }
     }
 }
 void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
 {
     u32 tmpIndex = 0;
-    SMotorUpdate* pMotor = &subBoardUpdate[0];//tmpMotorID=5
+    SMotorUpdate* pMotor = &subBoardUpdate;//tmpMotorID=5
     uint8_t tmpData[32];
     for(int i = 0; i < RxMessage->getLength(); i++)
     {
@@ -121,16 +104,6 @@ void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
         }
         pMotor->eSendSt = MUPDATE_SENDING_PACK;
     }
-    //    else if(RxMessage->getId() == (SUB_FRONT_UPDATE_SUCC_RES + m_nCanID))
-    //    {
-    //        pMotor->eSendSt = MUPDATE_SENDED_SUCC;
-    //    }
-    //    if(tmptype == 3)        //(tmpStdID == CAN2_RECV_PACK_TOTAL)//7
-    //    {
-    //        pMotor->responseWordTotal = UI32_MAKE(pData[0], pData[1], pData[2], pData[3]);
-    //        pMotor->responseWordCheckSum = UI32_MAKE(pData[4], pData[5], pData[6], pData[7]);
-    //        pMotor->eSendSt = MUPDATE_SENDED_SUCC;
-    //    }
 }
 void WorkerDownloadThread::UpdateSubBoardMain(void)
 {
@@ -145,7 +118,6 @@ void WorkerDownloadThread::UpdateSubBoardMain(void)
     }
 
     SubBoardUpdate();//BJF ID
-
     SubBoardUpdateEnd();
 }
 //8位加法累加和取反
@@ -159,16 +131,11 @@ u16 CheckSumAdd08Anti(unsigned char* buffer, int length)
     addsum08 = ~addsum08;
     return (u16)addsum08;
 }
-
 //打开文件
 unint32 WorkerDownloadThread::SubBoardUpdateStateReady(void)
 {
-    //        loadFile(FileName);
     m_sQFileInfo = new QFileInfo(m_sFilePathName);
     QFile* file = new QFile;
-    /*
-        * 读取Bin文件
-        */
     file->setFileName(m_sQFileInfo->filePath());
     if(file->open(QIODevice::ReadOnly))
     {
@@ -201,16 +168,7 @@ unint32 WorkerDownloadThread::SubBoardUpdateInit(void)
     unint32 chkFlashState = 0;
 
     memset(&subBoardUpdate, 0x0, sizeof(subBoardUpdate));
-    //    UPDATE_CTRL* pUTInfo;
-
-    //    update_ctrl_flash = (UPDATE_CTRL*)FLASH_SECTOR_UPDATE_CTRL;
-    //    update_ctrl_table =  *update_ctrl_flash;
-    //    pUTInfo = &update_ctrl_table;
-
     gBinSizeWord  = m_sQFileInfo->size() / 4;
-    //    gBinCheckSum  = pUTInfo->u32_robotconfig_checksum;
-    //    gBinFlashAddr = pUTInfo->u32_robotconfig_addr;
-
     gBinCheckSum = CheckSumAdd08Anti((unsigned char*)m_sBinFileRawData.data(), m_sQFileInfo->size());
     emit Signal_progress(m_nProceValue,  QString("CRC=[%1]len=[%2]package=[%3]").arg(gBinCheckSum).arg(gBinSizeWord).arg(m_sQFileInfo->size()));
     return chkFlashState;
@@ -218,21 +176,23 @@ unint32 WorkerDownloadThread::SubBoardUpdateInit(void)
 
 void WorkerDownloadThread::SubBoardUpdate(void)
 {
-    //INF("Update Motor[%d]:\r\n", upIDmotor);
-    SMotorUpdate* pMotor = &subBoardUpdate[0];
-    //pMotor->sendMotorID = upIDmotor;
-
-    int send_header_cnt = 0;
+    SMotorUpdate* pMotor = &subBoardUpdate;
+    pMotor->sendMotorID = m_nCanID;
+    //    int send_header_cnt = 0;
+    int flag_MUPDATE_NULL = 1;
+    int flag_MUPDATE_SEND_HEADER = 1;
+    QTime time;
+    time.start();
     while(1)
     {
         if(pMotor->eSendSt == MUPDATE_SENDED_SUCC || (pMotor->responseWordIndex > gBinSizeWord)) //MUPDATE_SENDED_SUCC:4
         {
             static uint8_t counter = 0;
             counter++;
-            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish!\r\n");
-            if(counter > 20)
+            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish!");
+            if(counter > 5)
             {
-                emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish Done!\r\n");
+                emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish Done!");
                 msleep(1000);
                 break;
             }
@@ -240,30 +200,49 @@ void WorkerDownloadThread::SubBoardUpdate(void)
         switch(pMotor->eSendSt)
         {
             case MUPDATE_NULL:
-                emit Signal_progress(m_nProceValue,  "-> MUPDATE_NULL\r\n");
-                pMotor->readFlashStartAddr = gBinFlashAddr;
+            {
+                QString tmpStr = (flag_MUPDATE_NULL ? "-> Waiting for the device to be upgraded to be inserted..." : ".");
+                if(flag_MUPDATE_NULL)
+                {
+                    flag_MUPDATE_NULL = 0;
+                }
+                emit Signal_progress(m_nProceValue,  tmpStr);
                 pMotor->sendWordTotal      = gBinSizeWord ;
                 pMotor->sendWordCheckSum   = gBinCheckSum;
-
-                bsp_SubBoard_Update_Start(m_nCanID, m_nUpdateType); //(CAN2_SEND_UPDATE_INIT,0,0,1);//CAN2_SEND_UPDATE_INIT:4
+                bsp_SubBoard_Update_Start(m_nCanID, m_nUpdateType);
                 msleep(100);
                 break;
+            }
             case MUPDATE_SEND_HEADER:
-                emit Signal_progress(m_nProceValue,  "-> MUPDATE_SEND_HEADER ");
-                bsp_SubBoard_Update_InitCmd(m_nCanID, pMotor->sendWordTotal, pMotor->sendWordCheckSum); //(CAN2_SEND_UPDATE_INIT, pMotor->sendWordTotal, pMotor->sendWordCheckSum,0);
+            {
+                QString tmpStr = (flag_MUPDATE_SEND_HEADER ? "-> Waiting for the Package header... " : ".");
+                if(flag_MUPDATE_SEND_HEADER)
+                {
+                    flag_MUPDATE_SEND_HEADER = 0;
+                }
+                emit Signal_progress(m_nProceValue,  tmpStr);
+                bsp_SubBoard_Update_InitCmd(m_nCanID, pMotor->sendWordTotal, pMotor->sendWordCheckSum);
                 msleep(100);
                 break;
+            }
             case MUPDATE_SENDING_PACK://3
             {
                 uint32_t tmpResponseIndex = pMotor->responseWordIndex;
                 memcpy(&pMotor->sendData, m_sBinFileRawData.data() + ((tmpResponseIndex - 1) * 4), sizeof(int));
-                //BJFUpdateSendPackData(CAN2_SEND_UPDATE_PACKET, tmpResponseIndex, pMotor->sendData);
                 SubBoardUpdateSendPackData(m_nCanID, tmpResponseIndex, pMotor->sendData);
                 m_nProceValue = tmpResponseIndex * 100.0 / gBinSizeWord;
                 emit Signal_progress(m_nProceValue,  "");
-                if(!(tmpResponseIndex % 100) || tmpResponseIndex < 10)
+                if(!(tmpResponseIndex % 100) || tmpResponseIndex < 3)
                 {
-                    emit Signal_progress(m_nProceValue,  QString("[%1] index=%2(%3)").arg(pMotor->sendMotorID).arg(tmpResponseIndex).arg(gBinSizeWord));
+
+                    double completed_percentage = m_nProceValue / 100.0;
+                    double time_elapsed = time.elapsed() / 1000.0;
+                    // 计算总时间和剩余时间
+                    double total_time = (time_elapsed * 100) / completed_percentage;
+                    double remaining_time = total_time - time_elapsed;
+
+                    emit Signal_progress(m_nProceValue,  QString("index=%1(%2) [%3][%4][%5]").arg(tmpResponseIndex).arg(gBinSizeWord).arg(total_time).arg(time_elapsed).arg(remaining_time));
+
                 }
                 if(tmpResponseIndex >= gBinSizeWord)
                 {
@@ -271,9 +250,6 @@ void WorkerDownloadThread::SubBoardUpdate(void)
                     emit Signal_progress(m_nProceValue,  QString("[%1] index=%2(%3)").arg(pMotor->sendMotorID).arg(tmpResponseIndex).arg(gBinSizeWord));
                     pMotor->eSendSt = MUPDATE_SENDED_SUCC ;
                 }
-                SubBoard_watch_flag = true;
-                SubBoard_watch_pack = tmpResponseIndex;
-                SubBoard_watch_total = gBinSizeWord;
             }
             break;
             default:
@@ -311,7 +287,6 @@ void WorkerDownloadThread::bsp_SubBoard_Update_Start(int canId, int updateType)
     canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
     Signal_SendCanMessage(&canMessage);
     msleep(100);
-    //    CAN1_Send_Msg_SubBoard(&tmpCandata[0], type, stdID);
 }
 
 void WorkerDownloadThread::bsp_SubBoard_Update_InitCmd(u32 stdID, u32 binSize, u32 binCheckSum)
@@ -329,11 +304,8 @@ void WorkerDownloadThread::bsp_SubBoard_Update_InitCmd(u32 stdID, u32 binSize, u
     tmpCandata[7] = UI32_LOLO8(binCheckSum);
     canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
     canMessage.setId(SUB_FRONT_UPDATE_START + stdID);
-
     Signal_SendCanMessage(&canMessage);
     msleep(100);
-
-    //    CAN1_Send_Msg_SubBoard(&tmpCandata[0], type, stdID);
 }
 
 void WorkerDownloadThread::SubBoardUpdateSendPackData(u32 stdID, unint32 dataIndex, unint32 dataSend)
@@ -350,8 +322,6 @@ void WorkerDownloadThread::SubBoardUpdateSendPackData(u32 stdID, unint32 dataInd
     tmpCandata[7] = UI32_LOLO8(dataSend);
     canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
     canMessage.setId(SUB_FRONT_UPDATE_SEND + stdID);
-
     Signal_SendCanMessage(&canMessage);
     msleep(5);
-    //    bsp_SubBoard_Update_Packet(stdID, &tempData08[0], type);
 }

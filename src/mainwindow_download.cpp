@@ -48,16 +48,14 @@ void MainWindow_Download::OpenFile(void)
     m_sFilePathName = QFileDialog::getOpenFileName(this, tr("请选择需要打开的文件"), curPath, filter);
     if(!m_sFilePathName.isEmpty())
     {
-        //        loadFile(FileName);
+        ui->tabWidget->setCurrentIndex(1);
         QFileInfo* fileInfo = new QFileInfo(m_sFilePathName);
-
-        ui->textEdit_HexVeiw->setText("Bin Size:" + QString::number(fileInfo->size()) + "Bit");
-
+        //        ui->textEdit_HexVeiw->setText("File:" + m_sFilePathName);
+        ui->textEdit_HexVeiw->setHtml(QStringLiteral("<p style='margin:0px;padding:0px;'><strong>File:%1</strong>&nbsp;</p>").arg(m_sFilePathName));
+        ui->textEdit_HexVeiw->append("Bin Size:" + QString::number(fileInfo->size()) + "Bit");
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor)); //等待旋转
 
         QFile* file = new QFile;
-        /*
-        * 读取Bin文件
-        */
         file->setFileName(fileInfo->filePath());
         if(file->open(QIODevice::ReadOnly))
         {
@@ -65,8 +63,8 @@ void MainWindow_Download::OpenFile(void)
             char* pBuff = new char[fileInfo->size()];
             BinFileData.readRawData(pBuff, static_cast<int>(fileInfo->size()));
             QByteArray BinFileRawData = QByteArray(pBuff, static_cast<int>(fileInfo->size()));
-            qDebug() << BinFileRawData.toHex(' ').toUpper();
-            qDebug() << BinFileRawData;
+            //            qDebug() << BinFileRawData.toHex(' ').toUpper();
+            //            qDebug() << BinFileRawData;
 
             ui->textEdit_HexVeiw->append(BinFileRawData.toHex(' ').toUpper());
             delete []pBuff ;
@@ -77,6 +75,7 @@ void MainWindow_Download::OpenFile(void)
             QMessageBox mesg;
             mesg.critical(this, tr("Error"), tr("无法读取,请检查BIN文件路径!"));
         }
+        QApplication::restoreOverrideCursor();//恢复
         delete file;
         delete  fileInfo;
 
@@ -84,7 +83,7 @@ void MainWindow_Download::OpenFile(void)
         QApplication::restoreOverrideCursor();      //
 
         ui->lineEdit->setText(m_sFilePathName);
-        ui->tabWidget->setCurrentIndex(1);
+
         //        ui->tabWidget->setVisible(true);
     }
 }

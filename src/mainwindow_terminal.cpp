@@ -306,6 +306,7 @@ void MainWindow_terminal::writeData(const QByteArray& data)
             m_ui->lineEdit->setText(QString(tmpByteArray));
             m_nCurrentIndexCommandList = m_sLastCommandList.length() - 1;
         }
+        //        if(QString(data).contains())
         m_console->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);   //将光标移动到文本末尾
         tmpByteArray.clear();
     }

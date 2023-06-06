@@ -12,6 +12,7 @@
 #include <QString>
 #include <core/Backend.h>
 #include <QByteArray>
+
 #define u8 uint8_t
 #define u16 uint16_t
 #define u32 uint32_t
@@ -67,7 +68,7 @@ typedef enum STsSUB_SYS_STDID_
 typedef struct _TAG_MOTOR_UPDATA_CTRL
 {
     unint32  sendMotorID;
-    unint32  readFlashStartAddr;
+    //    unint32  readFlashStartAddr;
 
     /* target file info. */
     unint32  sendWordTotal;
@@ -132,12 +133,12 @@ private:
     QByteArray m_sBinFileRawData;
     unint32 gBinSizeWord = 0;
     unint32 gBinCheckSum = 0;
-    unint32 gBinFlashAddr = 0;
+    SMotorUpdate subBoardUpdate;//yk
 
-    SMotorUpdate subBoardUpdate[2];//yk
-    bool SubBoard_watch_flag = false;
-    int SubBoard_watch_pack = 0;
-    int SubBoard_watch_total = 0;
+
+    //    bool SubBoard_watch_flag = false;
+    //    int SubBoard_watch_pack = 0;
+    //    int SubBoard_watch_total = 0;
 
 };
 
