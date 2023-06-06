@@ -129,7 +129,7 @@ private:
     uint32_t m_nUpdateType;
     QString m_sFilePathName;
     uint32_t m_nProceValue;
-    QFileInfo* m_sQFileInfo ;
+    //    QFileInfo* m_sQFileInfo ;
     QByteArray m_sBinFileRawData;
     unint32 gBinSizeWord = 0;
     unint32 gBinCheckSum = 0;

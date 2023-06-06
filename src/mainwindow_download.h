@@ -27,6 +27,7 @@ public:
     void OpenFile(void);
     void DownloadFile(void);
     void HandleCanMessage(const CanMessage* p_sCanMessage);
+    void SetCanId(int canId);
 public slots:
     bool Slot_UpdateProcess(const int counter, QString str);
     void closeEvent(QCloseEvent* event);

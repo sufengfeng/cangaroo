@@ -134,15 +134,23 @@ u16 CheckSumAdd08Anti(unsigned char* buffer, int length)
 //打开文件
 unint32 WorkerDownloadThread::SubBoardUpdateStateReady(void)
 {
-    m_sQFileInfo = new QFileInfo(m_sFilePathName);
+    QFileInfo*  fileInfo = new QFileInfo(m_sFilePathName);
     QFile* file = new QFile;
-    file->setFileName(m_sQFileInfo->filePath());
+    file->setFileName(fileInfo->filePath());
     if(file->open(QIODevice::ReadOnly))
     {
         QDataStream BinFileData(file);
         char* pBuff = new char[file->size()];
-        BinFileData.readRawData(pBuff, static_cast<int>(m_sQFileInfo->size()));
-        m_sBinFileRawData = QByteArray(pBuff, static_cast<int>(m_sQFileInfo->size()));
+        BinFileData.readRawData(pBuff, static_cast<int>(fileInfo->size()));
+        m_sBinFileRawData = QByteArray(pBuff, static_cast<int>(fileInfo->size()));
+        int forBitAlignment = m_sBinFileRawData.size() % 4;    //字节对其
+        if(forBitAlignment)
+        {
+            for(int i = forBitAlignment; i < 4; i++)
+            {
+                m_sBinFileRawData.append(0xff);
+            }
+        }
         delete []pBuff ;
         file->close();
     }
@@ -151,6 +159,7 @@ unint32 WorkerDownloadThread::SubBoardUpdateStateReady(void)
         qDebug() << QString(tr("无法读取,请检查BIN文件路径!"));
     }
     delete file;
+    delete fileInfo;
 
     return 0;
 }
@@ -159,7 +168,7 @@ unint32 WorkerDownloadThread::SubBoardUpdateStateReady(void)
 //打开文件
 unint32 WorkerDownloadThread::SubBoardUpdateEnd(void)
 {
-    delete  m_sQFileInfo;
+    m_sBinFileRawData.clear();
     return 0;
 }
 //计算checksum
@@ -168,9 +177,9 @@ unint32 WorkerDownloadThread::SubBoardUpdateInit(void)
     unint32 chkFlashState = 0;
 
     memset(&subBoardUpdate, 0x0, sizeof(subBoardUpdate));
-    gBinSizeWord  = m_sQFileInfo->size() / 4;
-    gBinCheckSum = CheckSumAdd08Anti((unsigned char*)m_sBinFileRawData.data(), m_sQFileInfo->size());
-    emit Signal_progress(m_nProceValue,  QString("CRC=[%1]len=[%2]package=[%3]").arg(gBinCheckSum).arg(gBinSizeWord).arg(m_sQFileInfo->size()));
+    gBinSizeWord  = m_sBinFileRawData.size() / 4;
+    gBinCheckSum = CheckSumAdd08Anti((unsigned char*)m_sBinFileRawData.data(), m_sBinFileRawData.size());
+    emit Signal_progress(m_nProceValue,  QString("CRC=[%1]len=[%2]package=[%3]").arg(gBinCheckSum).arg(gBinSizeWord).arg(m_sBinFileRawData.size()));
     return chkFlashState;
 }
 
@@ -183,25 +192,25 @@ void WorkerDownloadThread::SubBoardUpdate(void)
     int flag_MUPDATE_SEND_HEADER = 1;
     QTime time;
     time.start();
+    //    uint8_t counter = 0;
     while(1)
     {
         if(pMotor->eSendSt == MUPDATE_SENDED_SUCC || (pMotor->responseWordIndex > gBinSizeWord)) //MUPDATE_SENDED_SUCC:4
         {
-            static uint8_t counter = 0;
-            counter++;
-            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish!");
-            if(counter > 5)
-            {
-                emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish Done!");
-                msleep(1000);
-                break;
-            }
+            //            counter++;
+            //            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish!");
+            //            if(counter > 1)
+            //            {
+            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish Done!");
+            //            msleep(1000);
+            break;
+            //        }
         }
         switch(pMotor->eSendSt)
         {
             case MUPDATE_NULL:
             {
-                QString tmpStr = (flag_MUPDATE_NULL ? "-> Waiting for the device to be upgraded to be inserted..." : ".");
+                QString tmpStr = (flag_MUPDATE_NULL ? "-> Waiting for the device to be upgraded to be inserted..." : "");
                 if(flag_MUPDATE_NULL)
                 {
                     flag_MUPDATE_NULL = 0;
@@ -215,7 +224,7 @@ void WorkerDownloadThread::SubBoardUpdate(void)
             }
             case MUPDATE_SEND_HEADER:
             {
-                QString tmpStr = (flag_MUPDATE_SEND_HEADER ? "-> Waiting for the Package header... " : ".");
+                QString tmpStr = (flag_MUPDATE_SEND_HEADER ? "-> Waiting for the Package header... " : "");
                 if(flag_MUPDATE_SEND_HEADER)
                 {
                     flag_MUPDATE_SEND_HEADER = 0;
@@ -232,22 +241,23 @@ void WorkerDownloadThread::SubBoardUpdate(void)
                 SubBoardUpdateSendPackData(m_nCanID, tmpResponseIndex, pMotor->sendData);
                 m_nProceValue = tmpResponseIndex * 100.0 / gBinSizeWord;
                 emit Signal_progress(m_nProceValue,  "");
-                if(!(tmpResponseIndex % 100) || tmpResponseIndex < 3)
+                //                if(!(tmpResponseIndex % 100) || tmpResponseIndex < 3)
+                if(!(tmpResponseIndex % 100))
                 {
 
-                    double completed_percentage = m_nProceValue / 100.0;
+                    double completed_percentage = tmpResponseIndex * 1.0 / gBinSizeWord;
                     double time_elapsed = time.elapsed() / 1000.0;
                     // 计算总时间和剩余时间
-                    double total_time = (time_elapsed * 100) / completed_percentage;
+                    double total_time = (time_elapsed) / completed_percentage;
                     double remaining_time = total_time - time_elapsed;
 
-                    emit Signal_progress(m_nProceValue,  QString("index=%1(%2) [%3][%4][%5]").arg(tmpResponseIndex).arg(gBinSizeWord).arg(total_time).arg(time_elapsed).arg(remaining_time));
+                    emit Signal_progress(m_nProceValue,  QString("index=%1(%2) total:[%3s] elapse:[%4s]remain:[%5s]").arg(tmpResponseIndex).arg(gBinSizeWord).arg(QString::number(total_time, 'f', 2)).arg(QString::number(time_elapsed, 'f', 2)).arg(QString::number(remaining_time, 'f', 2)));
 
                 }
                 if(tmpResponseIndex >= gBinSizeWord)
                 {
                     SubBoardUpdateSendPackData(m_nCanID, tmpResponseIndex, pMotor->sendData);
-                    emit Signal_progress(m_nProceValue,  QString("[%1] index=%2(%3)").arg(pMotor->sendMotorID).arg(tmpResponseIndex).arg(gBinSizeWord));
+                    emit Signal_progress(m_nProceValue,  QString("index=%1(%2)").arg(tmpResponseIndex).arg(gBinSizeWord));
                     pMotor->eSendSt = MUPDATE_SENDED_SUCC ;
                 }
             }

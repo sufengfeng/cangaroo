@@ -52,7 +52,7 @@ void MainWindow_Download::OpenFile(void)
         QFileInfo* fileInfo = new QFileInfo(m_sFilePathName);
         //        ui->textEdit_HexVeiw->setText("File:" + m_sFilePathName);
         ui->textEdit_HexVeiw->setHtml(QStringLiteral("<p style='margin:0px;padding:0px;'><strong>File:%1</strong>&nbsp;</p>").arg(m_sFilePathName));
-        ui->textEdit_HexVeiw->append("Bin Size:" + QString::number(fileInfo->size()) + "Bit");
+        //        ui->textEdit_HexVeiw->append("Bin Size:" + QString::number(fileInfo->size()) + "Bit");
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor)); //等待旋转
 
         QFile* file = new QFile;
@@ -65,10 +65,19 @@ void MainWindow_Download::OpenFile(void)
             QByteArray BinFileRawData = QByteArray(pBuff, static_cast<int>(fileInfo->size()));
             //            qDebug() << BinFileRawData.toHex(' ').toUpper();
             //            qDebug() << BinFileRawData;
-
+            int forBitAlignment = BinFileRawData.size() % 4;    //字节对其
+            if(forBitAlignment)
+            {
+                for(int i = forBitAlignment; i < 4; i++)
+                {
+                    BinFileRawData.append(0xff);
+                }
+            }
+            ui->textEdit_HexVeiw->append("Bin Size:" + QString::number(BinFileRawData.size()) + "Bit");
             ui->textEdit_HexVeiw->append(BinFileRawData.toHex(' ').toUpper());
             delete []pBuff ;
             file->close();
+            BinFileRawData.clear();
         }
         else
         {
@@ -95,7 +104,10 @@ void MainWindow_Download::DownloadFile(void)
     m_sWorkerDownloadThread->StartUpdateHardWare(m_sFilePathName, canid, updateType);
 }
 
-
+void MainWindow_Download::SetCanId(int canId)
+{
+    ui->spinBox_CanID->setValue(canId);
+}
 void MainWindow_Download::HandleCanMessage(const CanMessage* p_sCanMessage)
 {
     m_sWorkerDownloadThread->HandleCanMessage(p_sCanMessage);

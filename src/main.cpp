@@ -22,6 +22,38 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include <QtDebug>
+#include "windows.h"
+#define MAX_PROGRESS 100
+#define PROGRESS_BAR_LENGTH 50
+
+void print_percentage(int percentage)
+{
+    int filled_length = (percentage * PROGRESS_BAR_LENGTH) / MAX_PROGRESS;
+
+    printf("\r进度：[%3d%%] [", percentage);
+
+    for(int i = 0; i < filled_length; i++)
+    {
+        printf("*");
+    }
+
+    for(int i = filled_length; i < PROGRESS_BAR_LENGTH; i++)
+    {
+        printf(" ");
+    }
+
+    printf("]");
+    fflush(stdout);
+}
+void main_test(void)
+{
+    for(int i = 0; i <= 100; i++)
+    {
+        print_percentage(i);
+        Sleep(50); // 暂停50毫秒，模拟进度更新
+    }
+    printf("\n");
+}
 int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
@@ -29,5 +61,6 @@ int main(int argc, char* argv[])
     //    w.show();
     w.ShowTerminal();
 
+    //    main_test();
     return a.exec();
 }

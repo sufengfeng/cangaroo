@@ -15,8 +15,6 @@
 #include <driver/SLCANDriver/SLCANDriver.h>
 #include <driver/CANBlastDriver/CANBlasterDriver.h>
 #include <driver/CanInterface.h>
-#include <QLabel>
-#include <QMessageBox>
 #include "qmywidget.h"
 #include "mainwindow_download.h"
 #include "workerdownloadthread.h"
@@ -46,17 +44,24 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     m_sDockRight->hide();
     m_sMainWindow_Download = new MainWindow_Download;
     //左侧浮动窗口
-    //    QDockWidget* m_sDockLeft = new QDockWidget(this);
-    //    addDockWidget(Qt::RightDockWidgetArea, m_sDockLeft);
+    m_sDockLeft = new QDockWidget(this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_sDockLeft);
 
-    //    QMyWidget* widgeDeviceList = new QMyWidget;
-    //    widge->size = QSize(200, 400);
-    //    m_sDockLeft->setWidget(widgeDeviceList);
-    //    QListWidget* listWidget = new QListWidget(widgeDeviceList);
-    //    listWidget->addItem("devie01");
-    //    listWidget->addItem("devie02");
-    //    listWidget->addItem("devie03");
-    //    m_sDockLeft->hide();
+    QMyWidget* widgeDeviceList = new QMyWidget;
+    widge->size = QSize(200, 400);
+    m_sDockLeft->setWidget(widgeDeviceList);
+    QListWidget* m_sQListWidget = new QListWidget(widgeDeviceList);
+    //    QListWidgetItem* item = new QListWidgetItem;
+    //    item->setData(Qt::DisplayRole, "1");
+    //    item->setData(Qt::CheckStateRole, Qt::Checked);
+    //    m_sQListWidget->addItem(item);
+
+    //    QListWidgetItem* item1 = new QListWidgetItem;
+    //    item1->setData(Qt::DisplayRole, "2");
+    //    item1->setData(Qt::CheckStateRole, Qt::Checked);
+    //    m_sQListWidget->addItem(item1);
+    connect(m_sQListWidget, &QListWidget::itemClicked, this, &MainWindow_terminal::Slot_DeviceList_ItemClicked);
+    m_sDockLeft->hide();
 
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);
@@ -87,6 +92,10 @@ MainWindow_terminal::~MainWindow_terminal()
     delete m_sMainWindow_Download;
     delete m_settings;
     delete m_sDockRight;
+    m_sQListDevice.clear();
+    m_sQListWidget->clear();    //清空
+    delete m_sQListWidget;
+    delete m_sDockLeft ;
     delete m_ui;
 }
 
@@ -151,6 +160,7 @@ void MainWindow_terminal::CanConnectStatusChanged(int status)
         //                          .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
         //                          .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
         showStatusMessage(tr("Connected to can device "));
+        Slot_CallAllCanDevices();
     }
     else                //disconnected
     {
@@ -305,8 +315,12 @@ void MainWindow_terminal::writeData(const QByteArray& data)
             }
             m_ui->lineEdit->setText(QString(tmpByteArray));
             m_nCurrentIndexCommandList = m_sLastCommandList.length() - 1;
+            if(QString(tmpByteArray).indexOf("upgrade") >= 0)
+            {
+                //                qDebug() << __func__ << __LINE__;
+                Slot_StartDownLoad();   //开始升级
+            }
         }
-        //        if(QString(data).contains())
         m_console->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);   //将光标移动到文本末尾
         tmpByteArray.clear();
     }
@@ -354,6 +368,10 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
         }
         m_console->putData(data);
     }
+    else if(p_sCanMessage->getId() == 0x160)
+    {
+        AddDeviceList(p_sCanMessage->getByte(0));
+    }
     m_sMainWindow_Download->HandleCanMessage(p_sCanMessage);
 }
 //! [8]
@@ -377,13 +395,34 @@ void MainWindow_terminal::initActionsConnections()
     connect(m_ui->actionClear, &QAction::triggered, m_console, &Console::clear);
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow_terminal::about);
     //    connect(m_ui->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
-    connect(m_ui->actionCallDevices, &QAction::triggered, this, &MainWindow_terminal::CallAllCanDevices);
+    connect(m_ui->actionCallDevices, &QAction::triggered, this, &MainWindow_terminal::Slot_CallAllCanDevices);
 
     connect(m_ui->actioncangaroo, &QAction::triggered, this, &MainWindow_terminal::SlotShowCangaroo);
     connect(m_ui->actionCanAlyst, &QAction::triggered, this, &MainWindow_terminal::SlotShowCanalyst);
-    connect(m_ui->actionDownload, &QAction::triggered, m_sMainWindow_Download, &MainWindow_Download::show);
+    connect(m_ui->actionDownload, &QAction::triggered, this, &MainWindow_terminal::Slot_StartDownLoad);
 }
-#include "QDebug"
+void MainWindow_terminal::Slot_StartDownLoad(void)
+{
+    CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
+    if(canInterfaceIdList.isEmpty() == false)
+    {
+        CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
+        if(intf->isOpen())
+        {
+            m_sMainWindow_Download->show();
+        }
+        else
+        {
+            showConfig();
+        }
+    }
+    else
+    {
+        showConfig();
+    }
+}
+
+
 void MainWindow_terminal::showConfig(void)
 {
     if(IsCanDevice())
@@ -414,27 +453,59 @@ void MainWindow_terminal::SlotShowCanalyst(void)
     }
 
 }
-void MainWindow_terminal::CallAllCanDevices(void)
+
+void MainWindow_terminal::Slot_DeviceList_ItemClicked(QListWidgetItem* item)
 {
-
-    CanMessage msg;
-    uint32_t address = 0x160;
-    int dlc = 8;
-    if(dlc > 8)
+    int canId = item->text().toInt();
+    qDebug() << __func__ << __LINE__ << item->text() << item->checkState();
+    if(item->checkState() == Qt::Checked)
     {
-        dlc = 8;
+        if(m_sQListDevice.contains(canId))
+        {
+            ;
+        }
+        else
+        {
+            m_sQListDevice.append(canId);
+            m_sMainWindow_Download->SetCanId(canId);
+            m_ui->spinBox->setValue(canId);
+        }
     }
-    // Set payload data
-    //    for(uint8_t i = 0; i < dlc; i++)
-    //    {
+    else
+    {
+        if(m_sQListDevice.contains(canId))
+        {
+            m_sQListDevice.removeOne(canId);
+            if(m_sQListDevice.isEmpty() != true)
+            {
+                canId = m_sQListDevice.last();
+                m_sMainWindow_Download->SetCanId(canId);
+                m_ui->spinBox->setValue(canId);
+            }
+        }
+    }
+}
+void MainWindow_terminal::AddDeviceList(int canId)
+{
+    QListWidgetItem* item = new QListWidgetItem;
+    item->setData(Qt::DisplayRole, QString("%1").arg(canId));
+    item->setData(Qt::CheckStateRole, Qt::Unchecked);
 
-    //    }
+    m_sQListWidget->addItem(item);
+    m_sQListWidget->show();
+}
+//bool MainWindow_terminal::IsCangarooConnet(void)
+//{
+
+//    CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
+//    return canInterfaceIdList.isEmpty() == false;
+//}
+void MainWindow_terminal::Slot_CallAllCanDevices(void)
+{
+    CanMessage msg;
     msg.setDataAt(0, 0x01);
-    msg.setId(address);
-    msg.setLength(dlc);
-    msg.setExtended(false);
-    msg.setRTR(false);
-    msg.setErrorFrame(false);
+    msg.setId(0x160);
+    msg.setLength(8);
     CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
     if(canInterfaceIdList.isEmpty() == false)
     {

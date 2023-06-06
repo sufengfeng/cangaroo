@@ -91,6 +91,7 @@
    <addaction name="actionDisconnect"/>
    <addaction name="actionConfigure"/>
    <addaction name="actionClear"/>
+   <addaction name="actionDownload"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionAbout">
@@ -226,6 +227,10 @@
    </property>
   </action>
   <action name="actionDownload">
+   <property name="icon">
+    <iconset resource="cangaroo.qrc">
+     <normaloff>:/images/download.png</normaloff>:/images/download.png</iconset>
+   </property>
    <property name="text">
     <string>Download</string>
    </property>

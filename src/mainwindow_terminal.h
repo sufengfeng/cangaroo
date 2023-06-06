@@ -55,6 +55,11 @@
 
 #include <QMainWindow>
 #include <QSerialPort>
+#include <QListWidget>
+#include <QListWidgetItem>
+//#include <QLabel>
+#include <QMessageBox>
+#include <QDebug>
 #include <core/Backend.h>
 QT_BEGIN_NAMESPACE
 
@@ -82,6 +87,7 @@ public:
 public slots:
     void SlotReveiveCanData(int idx);
     void CanConnectStatusChanged(int status);
+    void Slot_StartDownLoad(void);
     int Slot_SendCanMessage(CanMessage* psCanMessage);
 signals:
     void EmitSignalShowCangaroo(void);
@@ -100,11 +106,14 @@ private slots:
     void handleError(QSerialPort::SerialPortError error);
     void showConfig();
     bool IsCanDevice(void);
-    void CallAllCanDevices(void);
+    void Slot_CallAllCanDevices(void);
+    void Slot_DeviceList_ItemClicked(QListWidgetItem* item);
+
     int GetCanId(void);
     void SlotShowCangaroo(void);
     void SlotShowCanalyst(void);
 private:
+    void AddDeviceList(int canId);
     void initActionsConnections();
     void OpenDevice();
     void CloseDevice();
@@ -120,7 +129,10 @@ private:
     QList<QString>  m_sLastCommandList;
     int m_nCurrentIndexCommandList;
     QDockWidget* m_sDockRight;
+    QListWidget* m_sQListWidget;
+    QDockWidget* m_sDockLeft ;
     MainWindow_Download* m_sMainWindow_Download;
+    QList<int> m_sQListDevice;
 };
 
 #endif // MAINWINDOW_H
