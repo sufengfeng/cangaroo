@@ -39,17 +39,16 @@ void WorkerDownloadThread::run()
     //该线程管理类对应的线程实际运行代码位置
     while(1)
     {
-        int counter = 0;
         while(!m_stopFlag)
         {
             QTime time;
             time.start();
             UpdateSubBoardMain();
-            counter++;
-            emit Signal_progress(m_nProceValue, QString(tr("update total time:[%1]s[%2]")).arg(time.elapsed() / 1000.0).arg(counter));
+            emit Signal_progress(m_nProceValue, QString(tr("update total time:[%1]s")).arg(time.elapsed() / 1000.0));
             //            msleep(10000);
             StopDownload();
         }
+        msleep(1000);
     }
 }
 void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
