@@ -210,12 +210,12 @@
   </action>
   <action name="actionCallDevices">
    <property name="text">
-    <string>CallAllDevices</string>
+    <string>ShowAllDevices</string>
    </property>
   </action>
   <action name="actioncangaroo">
    <property name="text">
-    <string>cangaroo</string>
+    <string>Cangaroo</string>
    </property>
   </action>
   <action name="actionCanAlyst">

@@ -178,6 +178,7 @@
 #define __cdecl __attribute__((__cdecl__))
 #define __FLT32_MIN__ 1.17549435082228750796873653722224568e-38F32
 #define __UINT8_TYPE__ unsigned char
+#define __NO_INLINE__ 1
 #define __FLT_MANT_DIG__ 24
 #define __LDBL_DECIMAL_DIG__ 21
 #define __VERSION__ "7.3.0"

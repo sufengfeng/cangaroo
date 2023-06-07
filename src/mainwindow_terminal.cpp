@@ -50,7 +50,7 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     QMyWidget* widgeDeviceList = new QMyWidget;
     widge->size = QSize(200, 400);
     m_sDockLeft->setWidget(widgeDeviceList);
-    QListWidget* m_sQListWidget = new QListWidget(widgeDeviceList);
+    m_sQListWidget = new QListWidget(widgeDeviceList);
     //    QListWidgetItem* item = new QListWidgetItem;
     //    item->setData(Qt::DisplayRole, "1");
     //    item->setData(Qt::CheckStateRole, Qt::Checked);
@@ -487,12 +487,25 @@ void MainWindow_terminal::Slot_DeviceList_ItemClicked(QListWidgetItem* item)
 }
 void MainWindow_terminal::AddDeviceList(int canId)
 {
-    QListWidgetItem* item = new QListWidgetItem;
-    item->setData(Qt::DisplayRole, QString("%1").arg(canId));
-    item->setData(Qt::CheckStateRole, Qt::Unchecked);
+    int i = 0, nCnt = m_sQListWidget->count();
+    for(i = 0; i < nCnt; ++i)
+    {
+        QListWidgetItem* pItem = m_sQListWidget->item(i);
+        if(pItem->text().indexOf(QString("%1").arg(canId)) >= 0)
+        {
+            break;
+        }
+    }
+    if(i >= nCnt)   //不存在则新增
+    {
+        QListWidgetItem* item = new QListWidgetItem;
+        item->setData(Qt::DisplayRole, QString("%1").arg(canId));
+        item->setData(Qt::CheckStateRole, Qt::Unchecked);
 
-    m_sQListWidget->addItem(item);
-    m_sQListWidget->show();
+        m_sQListWidget->addItem(item);
+    }
+
+    m_sDockLeft->show();
 }
 //bool MainWindow_terminal::IsCangarooConnet(void)
 //{
