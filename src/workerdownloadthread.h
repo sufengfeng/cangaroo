@@ -12,7 +12,7 @@
 #include <QString>
 #include <core/Backend.h>
 #include <QByteArray>
-
+#include <core/Backend.h>
 #define u8 uint8_t
 #define u16 uint16_t
 #define u32 uint32_t
@@ -111,10 +111,11 @@ public:
     void StopDownload(void);
 signals:
     void Signal_progress(const int value, QString str);
-    int Signal_SendCanMessage(CanMessage* psCanMessage);
+
 protected:
     void    run();    //虚函数
 private:
+    int Signal_SendCanMessage(CanMessage* psCanMessage);
     void UpdateSubBoardMain(void);
     unint32 SubBoardUpdateStateReady(void);
     unint32 SubBoardUpdateInit(void);
@@ -134,8 +135,8 @@ private:
     unint32 gBinSizeWord = 0;
     unint32 gBinCheckSum = 0;
     SMotorUpdate subBoardUpdate;//yk
-
-
+    Backend& backend();
+    int Slot_SendCanMessage(CanMessage* p_sCanMessage);
     //    bool SubBoard_watch_flag = false;
     //    int SubBoard_watch_pack = 0;
     //    int SubBoard_watch_total = 0;

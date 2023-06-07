@@ -98,6 +98,7 @@ void MainWindow_Download::OpenFile(void)
 }
 void MainWindow_Download::DownloadFile(void)
 {
+    m_sFilePathName = ui->lineEdit->text();
     ui->tabWidget->setCurrentIndex(0);
     int canid = ui->spinBox_CanID->value();
     int updateType = ui->comboBox_UpdateType->currentIndex() + 1;

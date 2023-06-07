@@ -88,7 +88,8 @@ public slots:
     void SlotReveiveCanData(int idx);
     void CanConnectStatusChanged(int status);
     void Slot_StartDownLoad(void);
-    int Slot_SendCanMessage(CanMessage* psCanMessage);
+    void Slot_SaveLog(void);
+    //    int Slot_SendCanMessage(CanMessage* psCanMessage);
 signals:
     void EmitSignalShowCangaroo(void);
     void EmitSignalCloseCanDevice(void);

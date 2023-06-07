@@ -74,7 +74,7 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 
     connect(m_serial, &QSerialPort::errorOccurred, this, &MainWindow_terminal::handleError);
 
-    connect(m_sMainWindow_Download->m_sWorkerDownloadThread, &WorkerDownloadThread::Signal_SendCanMessage, this, &MainWindow_terminal::Slot_SendCanMessage);
+    //    connect(m_sMainWindow_Download->m_sWorkerDownloadThread, &WorkerDownloadThread::Signal_SendCanMessage, this, &MainWindow_terminal::Slot_SendCanMessage);
     //! [2]
     connect(m_serial, &QSerialPort::readyRead, this, &MainWindow_terminal::readData);
     //! [2]
@@ -99,50 +99,7 @@ MainWindow_terminal::~MainWindow_terminal()
     delete m_ui;
 }
 
-int MainWindow_terminal::Slot_SendCanMessage(CanMessage* p_sCanMessage)
-{
-    int iRet = 0;
-    CanMessage msg;
-    int sendIndex = 0;
-    int dlc = p_sCanMessage->getLength();
-    if(dlc > 8)
-    {
-        dlc = 8;
-    }
-    while(sendIndex < p_sCanMessage->getLength())
-    {
-        // Set payload data
-        for(uint8_t i = 0; (i < 8 && sendIndex < p_sCanMessage->getLength()); i++)
-        {
-            msg.setDataAt(i, p_sCanMessage->getByte(sendIndex));
-            sendIndex++;
-        }
-        msg.setId(p_sCanMessage->getId());
-        msg.setLength(dlc);
-        msg.setExtended(false);
-        msg.setRTR(false);
-        msg.setErrorFrame(false);
-        CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
-        if(canInterfaceIdList.isEmpty() == false)
-        {
-            CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
-            intf->sendMessage(msg);
 
-            char outmsg[256];
-            snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
-                     msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
-                     msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
-            qDebug() << outmsg;
-            //            log_info(outmsg);
-        }
-        else
-        {
-            qDebug() << "no device";
-            iRet = -1;
-        }
-    }
-    return iRet;
-}
 
 
 void MainWindow_terminal::CanConnectStatusChanged(int status)
@@ -243,7 +200,7 @@ void MainWindow_terminal::closeSerialPort()
 void MainWindow_terminal::about()
 {
     QMessageBox::about(this, tr("About GCAN-Term"),
-                       tr("Version: <b>V1.2</b><br>"
+                       tr("Version: <b>V1.4</b><br>"
                           "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus"
                          ));
 }
@@ -400,6 +357,38 @@ void MainWindow_terminal::initActionsConnections()
     connect(m_ui->actioncangaroo, &QAction::triggered, this, &MainWindow_terminal::SlotShowCangaroo);
     connect(m_ui->actionCanAlyst, &QAction::triggered, this, &MainWindow_terminal::SlotShowCanalyst);
     connect(m_ui->actionDownload, &QAction::triggered, this, &MainWindow_terminal::Slot_StartDownLoad);
+    connect(m_ui->actionSave, &QAction::triggered, this, &MainWindow_terminal::Slot_SaveLog);
+}
+void MainWindow_terminal::Slot_SaveLog(void)
+{
+    QFileDialog dlg(this);
+
+    //获取内容的保存路径
+    QString fileName = dlg.getSaveFileName(this, tr("Save As"), "./", tr("Text File(*.txt)"));
+
+    if(fileName == "")
+    {
+        return;
+    }
+
+    //内容保存到路径文件
+    QFile file(fileName);
+
+    //以文本方式打开
+    if(file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QTextStream out(&file); //IO设备对象的地址对其进行初始化
+
+        out << m_console->toPlainText() << endl; //输出
+
+        QMessageBox::warning(this, tr("Finish"), tr("Successfully save the file!"));
+
+        file.close();
+    }
+    else
+    {
+        QMessageBox::warning(this, tr("Error"), tr("File to open file!"));
+    }
 }
 void MainWindow_terminal::Slot_StartDownLoad(void)
 {
@@ -457,7 +446,7 @@ void MainWindow_terminal::SlotShowCanalyst(void)
 void MainWindow_terminal::Slot_DeviceList_ItemClicked(QListWidgetItem* item)
 {
     int canId = item->text().toInt();
-    qDebug() << __func__ << __LINE__ << item->text() << item->checkState();
+    //    qDebug() << __func__ << __LINE__ << item->text() << item->checkState();
     if(item->checkState() == Qt::Checked)
     {
         if(m_sQListDevice.contains(canId))
