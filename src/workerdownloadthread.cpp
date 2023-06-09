@@ -282,7 +282,7 @@ void WorkerDownloadThread::bsp_SubBoard_Update_Start(int canId, int updateType)
     memset(tmpCandata, 0, 8);
     tmpCandata[0] = canId;
     canMessage.setLength(8);
-    canMessage.setId(0x01);
+    canMessage.setId(0);        //ID固定为0或者1
     for(int i = 9; i < 0x0d; i++)       //获取版本号
     {
         tmpCandata[1] = i;

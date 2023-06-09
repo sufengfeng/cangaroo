@@ -45,11 +45,19 @@ void MainWindow_Download::OpenFile(void)
 
     QString curPath = QDir::currentPath(); //获取系统当前目录
     QString filter = "固件文件(*.bin *.gbin);;所有文件(*.*)"; //文件过滤器
+    if(!m_sFilePathName.isEmpty())
+    {
+        QFileInfo* fileInfo = new QFileInfo(m_sFilePathName);
+        curPath = fileInfo->filePath();
+        delete  fileInfo;
+    }
+
     m_sFilePathName = QFileDialog::getOpenFileName(this, tr("请选择需要打开的文件"), curPath, filter);
     if(!m_sFilePathName.isEmpty())
     {
         ui->tabWidget->setCurrentIndex(1);
         QFileInfo* fileInfo = new QFileInfo(m_sFilePathName);
+
         //        ui->textEdit_HexVeiw->setText("File:" + m_sFilePathName);
         ui->textEdit_HexVeiw->setHtml(QStringLiteral("<p style='margin:0px;padding:0px;'><strong>File:%1</strong>&nbsp;</p>").arg(m_sFilePathName));
         //        ui->textEdit_HexVeiw->append("Bin Size:" + QString::number(fileInfo->size()) + "Bit");

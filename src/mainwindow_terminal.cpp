@@ -33,6 +33,10 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     m_ui->setupUi(this);
     m_console = m_ui->widget;
     m_console->setEnabled(false);
+    m_Qtimer_2s = new QTimer(this);     //2s计数器
+    connect(m_Qtimer_2s, SIGNAL(timeout()), this, SLOT(Slot_HandleTimeout()));
+    setWindowIcon(QIcon(":/assets/cagaroo.png"));
+
     //浮动窗口
     m_sDockRight = new QDockWidget(this);
     addDockWidget(Qt::RightDockWidgetArea, m_sDockRight);
@@ -96,6 +100,7 @@ MainWindow_terminal::~MainWindow_terminal()
     m_sQListWidget->clear();    //清空
     delete m_sQListWidget;
     delete m_sDockLeft ;
+    delete m_Qtimer_2s;
     delete m_ui;
 }
 
@@ -199,10 +204,17 @@ void MainWindow_terminal::closeSerialPort()
 
 void MainWindow_terminal::about()
 {
+    //    QPushButton* connectButton = msgBox.addButton(tr("Connect"), QMessageBox::ActionRole);
+    //    QMessageBox MyBox(QMessageBox::Question, "Title", "text", QMessageBox::Yes | QMessageBox::No);
+    //    //使 MyBox 对话框显示
+    //    MyBox.exec();
+
     QMessageBox::about(this, tr("About GCAN-Term"),
-                       tr("Version: <b>V1.4</b><br>"
-                          "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus"
-                         ));
+                       QString("Version: <b>V1.4</b><br>"
+                               "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus<br>"
+                               "build time:[%1 %2]<br>").arg(__DATE__).arg(__TIME__)
+                      );
+
 }
 int MainWindow_terminal::GetCanId(void)
 {
@@ -324,6 +336,29 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
             data.append(p_sCanMessage->getByte(i));
         }
         m_console->putData(data);
+        if(m_nFlagSaveLog)       //追加日志
+        {
+            int dataLen = data.length() - 2;
+            for(int i = 0; i < dataLen;)
+            {
+                int index = data.indexOf('\n', i);
+                if(index >= 0) //行首增加时间
+                {
+                    QDateTime current_date_time = QDateTime::currentDateTime();
+                    QString current_date = current_date_time.toString("[yyyy.MM.dd-hh:mm:ss.zzz] ");
+                    data.insert(index + 1, current_date);
+                    data.remove(index, 1);      //去除回车 \n
+                    i += index + 1;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            m_QStLogData.append(data);
+        }
+        data.clear();
     }
     else if(p_sCanMessage->getId() == 0x160)
     {
@@ -359,35 +394,55 @@ void MainWindow_terminal::initActionsConnections()
     connect(m_ui->actionDownload, &QAction::triggered, this, &MainWindow_terminal::Slot_StartDownLoad);
     connect(m_ui->actionSave, &QAction::triggered, this, &MainWindow_terminal::Slot_SaveLog);
 }
+void MainWindow_terminal::Slot_HandleTimeout(void)
+{
+    //    return;
+    if(m_Qtimer_2s->isActive())
+    {
+        if(m_nFlagSaveLog)
+        {
+            QFile file(m_QStrFileName);//内容保存到路径文件
+            if(file.open(QIODevice::WriteOnly | QIODevice::Text))//以文本方式打开
+            {
+                QTextStream out(&file); //IO设备对象的地址对其进行初始化
+                out << m_QStLogData << endl   ; //输出
+                //                QMessageBox::warning(this, tr("Finish"), tr("Successfully save the file!"));
+                file.close();
+            }
+            else
+            {
+                //                QMessageBox::warning(this, tr("Error"), tr("File to open file!"));
+                qDebug() << QString("File to open file!");
+            }
+        }
+    }
+}
+
 void MainWindow_terminal::Slot_SaveLog(void)
 {
-    QFileDialog dlg(this);
+    //    m_ui->actionConfigure->setEnabled(false);
 
-    //获取内容的保存路径
-    QString fileName = dlg.getSaveFileName(this, tr("Save As"), "./", tr("Text File(*.txt)"));
-
-    if(fileName == "")
+    if(m_nFlagSaveLog)      //关闭日志记录
     {
-        return;
-    }
-
-    //内容保存到路径文件
-    QFile file(fileName);
-
-    //以文本方式打开
-    if(file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        QTextStream out(&file); //IO设备对象的地址对其进行初始化
-
-        out << m_console->toPlainText() << endl; //输出
-
+        m_nFlagSaveLog = 0;
+        m_Qtimer_2s->stop();
+        m_ui->actionSave->setToolTip("save log to ...");
+        m_ui->actionSave->setIcon(QIcon(":/images/save.png"));
         QMessageBox::warning(this, tr("Finish"), tr("Successfully save the file!"));
-
-        file.close();
     }
-    else
+    else                    //打开日志记录
     {
-        QMessageBox::warning(this, tr("Error"), tr("File to open file!"));
+        QFileDialog dlg(this);
+        //获取内容的保存路径
+        m_QStrFileName = dlg.getSaveFileName(this, tr("Save As"), "./", tr("Text File(*.txt)"));
+        if(m_QStrFileName == "")        //未选中
+        {
+            return;
+        }
+        m_nFlagSaveLog = 1;
+        m_Qtimer_2s->start(3000);           //3s记录一次
+        m_ui->actionSave->setToolTip("saving log ...");
+        m_ui->actionSave->setIcon(QIcon(":/images/saved.png"));
     }
 }
 void MainWindow_terminal::Slot_StartDownLoad(void)
@@ -496,14 +551,10 @@ void MainWindow_terminal::AddDeviceList(int canId)
 
     m_sDockLeft->show();
 }
-//bool MainWindow_terminal::IsCangarooConnet(void)
-//{
 
-//    CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
-//    return canInterfaceIdList.isEmpty() == false;
-//}
 void MainWindow_terminal::Slot_CallAllCanDevices(void)
 {
+    m_sQListWidget->clear();
     CanMessage msg;
     msg.setDataAt(0, 0x01);
     msg.setId(0x160);

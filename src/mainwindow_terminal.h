@@ -89,6 +89,7 @@ public slots:
     void CanConnectStatusChanged(int status);
     void Slot_StartDownLoad(void);
     void Slot_SaveLog(void);
+    void Slot_HandleTimeout(void);
     //    int Slot_SendCanMessage(CanMessage* psCanMessage);
 signals:
     void EmitSignalShowCangaroo(void);
@@ -134,6 +135,11 @@ private:
     QDockWidget* m_sDockLeft ;
     MainWindow_Download* m_sMainWindow_Download;
     QList<int> m_sQListDevice;
+    int m_nFlagSaveLog = 0;
+    QTimer* m_Qtimer_2s;
+    //获取内容的保存路径
+    QString m_QStrFileName;
+    QString m_QStLogData;
 };
 
 #endif // MAINWINDOW_H

@@ -10,5 +10,6 @@
         <file>images/connect.png</file>
         <file>images/disconnect.png</file>
         <file>images/settings.png</file>
+        <file>images/saved.png</file>
     </qresource>
 </RCC>

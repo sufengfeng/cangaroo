@@ -10,7 +10,8 @@ TARGET = cangaroo
 TEMPLATE = app
 CONFIG += warn_on
 CONFIG += link_pkgconfig
-#CONFIG += console
+CONFIG += console
+RC_ICONS = logo.ico
 DESTDIR = ../bin
 MOC_DIR = ../build/moc
 RCC_DIR = ../build/rcc
@@ -64,3 +65,4 @@ include($$PWD/driver/CANBlastDriver/CANBlastDriver.pri)
 include($$PWD/driver/SLCANDriver/SLCANDriver.pri)
 
 win32:include($$PWD/driver/CandleApiDriver/CandleApiDriver.pri)
+
