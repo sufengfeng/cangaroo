@@ -63,7 +63,6 @@
 #include <core/Backend.h>
 QT_BEGIN_NAMESPACE
 
-class QLabel;
 
 namespace Ui
 {
@@ -75,6 +74,8 @@ QT_END_NAMESPACE
 class Console;
 class SettingsDialog;
 class MainWindow_Download;
+class TraceWindow;
+
 class MainWindow_terminal : public QMainWindow
 {
     Q_OBJECT
@@ -90,7 +91,6 @@ public slots:
     void Slot_StartDownLoad(void);
     void Slot_SaveLog(void);
     void Slot_HandleTimeout(void);
-    //    int Slot_SendCanMessage(CanMessage* psCanMessage);
 signals:
     void EmitSignalShowCangaroo(void);
     void EmitSignalCloseCanDevice(void);
@@ -103,14 +103,13 @@ private slots:
     void about();
     void writeData(const QByteArray& data);
     void readData();
-    void SendMessageByCan(const QByteArray& data);
+    void SendQByteArrayByCan(const QByteArray& data);
     int SetCanInterfaceId(int interfaceId);
     void handleError(QSerialPort::SerialPortError error);
     void showConfig();
     bool IsCanDevice(void);
     void Slot_CallAllCanDevices(void);
     void Slot_DeviceList_ItemClicked(QListWidgetItem* item);
-
     int GetCanId(void);
     void SlotShowCangaroo(void);
     void SlotShowCanalyst(void);
@@ -133,6 +132,7 @@ private:
     QDockWidget* m_sDockRight;
     QListWidget* m_sQListWidget;
     QDockWidget* m_sDockLeft ;
+    TraceWindow* m_sTraceDockLeft;
     MainWindow_Download* m_sMainWindow_Download;
     QList<int> m_sQListDevice;
     int m_nFlagSaveLog = 0;

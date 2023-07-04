@@ -45,23 +45,13 @@ void print_percentage(int percentage)
     printf("]");
     fflush(stdout);
 }
-void main_test(void)
-{
-    for(int i = 0; i <= 100; i++)
-    {
-        print_percentage(i);
-        Sleep(50); // 暂停50毫秒，模拟进度更新
-    }
-    printf("\n");
-}
+
+
 int main(int argc, char* argv[])
 {
-
     QApplication a(argc, argv);
     MainWindow w;
     //    w.show();
     w.ShowTerminal();
-
-    //    main_test();
     return a.exec();
 }

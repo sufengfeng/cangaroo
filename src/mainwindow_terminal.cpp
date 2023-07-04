@@ -18,6 +18,8 @@
 #include "qmywidget.h"
 #include "mainwindow_download.h"
 #include "workerdownloadthread.h"
+typedef void (*Fun_t)(bool checked);
+//void clicked(bool checked = false);
 //! [0]
 MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     QMainWindow(parent),
@@ -44,7 +46,8 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     QMyWidget* widge = new QMyWidget;
     widge->size = QSize(300, 250);
     m_sDockRight->setWidget(widge);
-    TraceWindow* trace = new TraceWindow(widge, backend());
+    m_sTraceDockLeft = new TraceWindow(widge, backend());
+
     m_sDockRight->hide();
     m_sMainWindow_Download = new MainWindow_Download;
     //左侧浮动窗口
@@ -78,7 +81,6 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 
     connect(m_serial, &QSerialPort::errorOccurred, this, &MainWindow_terminal::handleError);
 
-    //    connect(m_sMainWindow_Download->m_sWorkerDownloadThread, &WorkerDownloadThread::Signal_SendCanMessage, this, &MainWindow_terminal::Slot_SendCanMessage);
     //! [2]
     connect(m_serial, &QSerialPort::readyRead, this, &MainWindow_terminal::readData);
     //! [2]
@@ -89,13 +91,14 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 }
 //! [3]
 
-
 MainWindow_terminal::~MainWindow_terminal()
 {
     backend().stopMeasurement();
     delete m_sMainWindow_Download;
     delete m_settings;
     delete m_sDockRight;
+    delete m_sTraceDockLeft;
+
     m_sQListDevice.clear();
     m_sQListWidget->clear();    //清空
     delete m_sQListWidget;
@@ -103,10 +106,6 @@ MainWindow_terminal::~MainWindow_terminal()
     delete m_Qtimer_2s;
     delete m_ui;
 }
-
-
-
-
 void MainWindow_terminal::CanConnectStatusChanged(int status)
 {
     const SettingsDialog::Settings p = m_settings->settings();
@@ -204,11 +203,6 @@ void MainWindow_terminal::closeSerialPort()
 
 void MainWindow_terminal::about()
 {
-    //    QPushButton* connectButton = msgBox.addButton(tr("Connect"), QMessageBox::ActionRole);
-    //    QMessageBox MyBox(QMessageBox::Question, "Title", "text", QMessageBox::Yes | QMessageBox::No);
-    //    //使 MyBox 对话框显示
-    //    MyBox.exec();
-
     QMessageBox::about(this, tr("About GCAN-Term"),
                        QString("Version: <b>V1.4</b><br>"
                                "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus<br>"
@@ -220,7 +214,7 @@ int MainWindow_terminal::GetCanId(void)
 {
     return m_ui->spinBox->value();
 }
-void MainWindow_terminal::SendMessageByCan(const QByteArray& data)
+void MainWindow_terminal::SendQByteArrayByCan(const QByteArray& data)
 {
     CanMessage msg;
     uint32_t address = 0x170 + GetCanId();
@@ -243,11 +237,28 @@ void MainWindow_terminal::SendMessageByCan(const QByteArray& data)
         msg.setExtended(false);
         msg.setRTR(false);
         msg.setErrorFrame(false);
+        struct timeval tv;
+        gettimeofday(&tv, nullptr);
+        msg.setTimestamp(tv);
+        msg.setTx(true);
         CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
         if(canInterfaceIdList.isEmpty() == false)
         {
             CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
-            intf->sendMessage(msg);
+            try
+            {
+                intf->sendMessage(msg);
+                backend().getTrace()->InsertCanMessageTrace(msg);
+            }
+            catch(char* ch)
+            {
+                QMessageBox::warning(this, tr("warning"), QString(ch));
+            }
+            catch(...)
+            {
+                QMessageBox::warning(this, tr("warning"), QString("The response times out. Please reinsert the device and try again!"));
+            }
+
         }
         else
         {
@@ -299,7 +310,7 @@ void MainWindow_terminal::writeData(const QByteArray& data)
     }
     if(IsCanDevice())
     {
-        SendMessageByCan(data);
+        SendQByteArrayByCan(data);
     }
     else
     {
@@ -335,7 +346,25 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
         {
             data.append(p_sCanMessage->getByte(i));
         }
-        m_console->putData(data);
+        int flagSkipInsertDataToConsole = 0;             //标识不更新console
+        if(data.length() == 1)                          //屏蔽delet反馈
+        {
+            if(data[0] == (char)0x7F)
+            {
+                flagSkipInsertDataToConsole = 1;
+            }
+        }
+        if(data.length() == 3)                          //屏蔽backspace反馈
+        {
+            if((data[0] == (char)0x08) && (data[1] == (char)0x20) && (data[2] == (char)0x08))
+            {
+                flagSkipInsertDataToConsole = 1;
+            }
+        }
+        if(flagSkipInsertDataToConsole == 0)
+        {
+            m_console->putData(data);
+        }
         if(m_nFlagSaveLog)       //追加日志
         {
             int dataLen = data.length() - 2;
@@ -551,7 +580,17 @@ void MainWindow_terminal::AddDeviceList(int canId)
 
     m_sDockLeft->show();
 }
+#include <stdio.h>
+#include <sys/time.h>
 
+
+inline long getCurrentTime(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
+}
 void MainWindow_terminal::Slot_CallAllCanDevices(void)
 {
     m_sQListWidget->clear();
@@ -559,11 +598,29 @@ void MainWindow_terminal::Slot_CallAllCanDevices(void)
     msg.setDataAt(0, 0x01);
     msg.setId(0x160);
     msg.setLength(8);
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    msg.setTimestamp(tv);
+    msg.setTx(true);
     CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
     if(canInterfaceIdList.isEmpty() == false)
     {
         CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
-        intf->sendMessage(msg);
+        try
+        {
+            intf->sendMessage(msg);
+            backend().getTrace()->InsertCanMessageTrace(msg);
+        }
+
+        catch(char* ch)
+        {
+            QMessageBox::warning(this, tr("warning"), QString(ch));
+        }
+        catch(...)
+        {
+            QMessageBox::warning(this, tr("warning"), QString("The response times out. Please reinsert the device and try again!"));
+        }
+
     }
     else
     {

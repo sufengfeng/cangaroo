@@ -12,7 +12,7 @@
 #include <QString>
 #include <core/Backend.h>
 #include <QByteArray>
-#include <core/Backend.h>
+
 #define u8 uint8_t
 #define u16 uint16_t
 #define u32 uint32_t
@@ -98,7 +98,7 @@ typedef struct _TAG_MOTOR_UPDATA_CTRL
 
 #define C2_OBST_UP_M    0x4    /*主控和避障盒远程升级时,主控消息ID,*/
 #define C2_OBST_UP_O    0x5    /*主控和避障盒远程升级时，避障盒消息ID*/
-
+#include <QMutex>
 class WorkerDownloadThread : public QThread
 {
     Q_OBJECT
@@ -129,7 +129,7 @@ private:
     uint32_t m_nCanID;
     uint32_t m_nUpdateType;
     QString m_sFilePathName;
-    uint32_t m_nProceValue;
+    int m_nProceValue;
     //    QFileInfo* m_sQFileInfo ;
     QByteArray m_sBinFileRawData;
     unint32 gBinSizeWord = 0;
@@ -140,6 +140,7 @@ private:
     //    bool SubBoard_watch_flag = false;
     //    int SubBoard_watch_pack = 0;
     //    int SubBoard_watch_total = 0;
+    QMutex qMutexSendPackage;
 
 };
 

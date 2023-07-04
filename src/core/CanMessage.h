@@ -52,7 +52,8 @@ public:
 
     bool isBRS() const;
     void setBRS(const bool isFD);
-
+    bool isTx()const;
+    void setTx(const bool isTx);
     bool isErrorFrame() const;
 	void setErrorFrame(const bool isErrorFrame);
 
@@ -92,6 +93,7 @@ private:
     uint8_t _dlc;
     bool _isFD;
     bool _isBRS;
+    int _isTx;
     CanInterfaceId _interface;
     union {
         uint8_t _u8[8*8];

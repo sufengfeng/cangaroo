@@ -5,7 +5,7 @@
 #include <driver/SLCANDriver/SLCANDriver.h>
 #include <driver/CANBlastDriver/CANBlasterDriver.h>
 #include <driver/CanInterface.h>
-//WorkerThread.cpp
+#include <QMessageBox>
 WorkerDownloadThread::WorkerDownloadThread()
     : QThread()
     , m_stopFlag(false)
@@ -61,43 +61,46 @@ void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
         tmpData[i] = RxMessage->getByte(i);
     }
     uint8_t* pData = tmpData;
-    uint32_t version;
-    if(RxMessage->getId() == 0x01 && tmpData[0] == m_nCanID)
+    uint32_t version = 0;
+    if(tmpData[0] == m_nCanID)
     {
-        switch(tmpData[1])
+        if(RxMessage->getId() == 0x01 || (RxMessage->getId() == 0x00) || (RxMessage->getId() == (0x90 << 4 + m_nCanID)) || (RxMessage->getId() == (0xa0 << 4 + m_nCanID)) || (RxMessage->getId() == (0xb0 + m_nCanID)) || (RxMessage->getId() == (0xc0 + m_nCanID)) || (RxMessage->getId() == (0x160 + m_nCanID)) || (RxMessage->getId() == (0x7E0 + m_nCanID)))
         {
-            case 0x09:
-                version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
-                emit Signal_progress(m_nProceValue, QString(tr("主MCU固件版本:0x%1")).arg(version, 0, 16));
-                break;
-            case 0x0a:
-                version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
-                emit Signal_progress(m_nProceValue, QString(tr("从MCU固件版本:0x%1")).arg(version, 0, 16));
-                break;
-            case 0x0b:
-                version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
-                emit Signal_progress(m_nProceValue, QString(tr("主MCU配置版本:0x%1")).arg(version, 0, 16));
-                break;
-            case 0x0c:
-                version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
-                emit Signal_progress(m_nProceValue, QString(tr("从MCU配置版本:0x%1")).arg(version, 0, 16));
-                break;
-            case 0x16:
-                emit Signal_progress(m_nProceValue, QString(tr("升级开始...")).arg(version, 0, 16));
-                break;
-            case 0x7E:
-                if(pData[3] == 2)
-                {
-                    emit Signal_progress(m_nProceValue, QString(tr("开始升级配置...")).arg(version, 0, 16));
-                }
-                else
-                {
-                    emit Signal_progress(m_nProceValue, QString(tr("开始升级固件...")).arg(version, 0, 16));
-                }
-                pMotor->eSendSt = MUPDATE_SEND_HEADER;      //确保升级配置
-                break;
-            default:
-                break;
+            switch(tmpData[1])
+            {
+                case 0x09:
+                    version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
+                    emit Signal_progress(m_nProceValue, QString(tr("主MCU固件版本:0x%1")).arg(version, 0, 16));
+                    break;
+                case 0x0a:
+                    version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
+                    emit Signal_progress(m_nProceValue, QString(tr("从MCU固件版本:0x%1")).arg(version, 0, 16));
+                    break;
+                case 0x0b:
+                    version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
+                    emit Signal_progress(m_nProceValue, QString(tr("主MCU配置版本:0x%1")).arg(version, 0, 16));
+                    break;
+                case 0x0c:
+                    version  =  UI32_MAKE(pData[2], pData[3], pData[4], pData[5]);
+                    emit Signal_progress(m_nProceValue, QString(tr("从MCU配置版本:0x%1")).arg(version, 0, 16));
+                    break;
+                case 0x16:
+                    emit Signal_progress(m_nProceValue, QString(tr("升级开始...")));
+                    break;
+                case 0x7E:
+                    if(pData[3] == 2)
+                    {
+                        emit Signal_progress(m_nProceValue, QString(tr("开始升级配置...")));
+                    }
+                    else
+                    {
+                        emit Signal_progress(m_nProceValue, QString(tr("开始升级固件...")));
+                    }
+                    pMotor->eSendSt = MUPDATE_SEND_HEADER;      //确保升级配置
+                    break;
+                default:
+                    break;
+            }
         }
     }
     else if(RxMessage->getId() == (SUB_FRONT_UPDATE_RES + m_nCanID))
@@ -106,17 +109,20 @@ void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
         if(tmpIndex <= pMotor->responseWordIndex + 1 && tmpIndex >= pMotor->responseWordIndex)
         {
             pMotor->responseWordIndex = tmpIndex;
+            pMotor->eSendSt = MUPDATE_SENDING_PACK;
         }
-        pMotor->eSendSt = MUPDATE_SENDING_PACK;
     }
 }
 void WorkerDownloadThread::UpdateSubBoardMain(void)
 {
+    backend().getTrace()->SetUpgradeStatus(true);       //停止更新trace
+
     /* Check Ready and Init. */
     if(SubBoardUpdateStateReady())
     {
         emit Signal_progress(m_nProceValue, QString("State is not ready!\r\n"));
     }
+
     if(SubBoardUpdateInit())
     {
         emit Signal_progress(m_nProceValue,  "Failed init!\r\n");
@@ -124,6 +130,8 @@ void WorkerDownloadThread::UpdateSubBoardMain(void)
 
     SubBoardUpdate();//BJF ID
     SubBoardUpdateEnd();
+
+    backend().getTrace()->SetUpgradeStatus(false);      //继续更新trace
 }
 //8位加法累加和取反
 u16 CheckSumAdd08Anti(unsigned char* buffer, int length)
@@ -203,14 +211,13 @@ void WorkerDownloadThread::SubBoardUpdate(void)
     {
         if(pMotor->eSendSt == MUPDATE_SENDED_SUCC || (pMotor->responseWordIndex > gBinSizeWord)) //MUPDATE_SENDED_SUCC:4
         {
-            //            counter++;
-            //            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish!");
-            //            if(counter > 1)
-            //            {
             emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish Done!");
-            //            msleep(1000);
             break;
-            //        }
+        }
+        if(pMotor->eSendSt == MUPDATE_ERROR)
+        {
+            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_ERROR. Finish Done!");
+            break;
         }
         switch(pMotor->eSendSt)
         {
@@ -243,14 +250,18 @@ void WorkerDownloadThread::SubBoardUpdate(void)
             case MUPDATE_SENDING_PACK://3
             {
                 tmpResponseIndex = pMotor->responseWordIndex;
+                if(tmpResponseIndex == 0 || tmpResponseIndex > gBinSizeWord * 2)
+                {
+                    log_error(QString("Error[%1],skip update").arg(tmpResponseIndex));
+                    pMotor->eSendSt = MUPDATE_ERROR ;
+                    return ;
+                }
                 memcpy(&pMotor->sendData, m_sBinFileRawData.data() + ((tmpResponseIndex - 1) * 4), sizeof(int));
                 SubBoardUpdateSendPackData(m_nCanID, tmpResponseIndex, pMotor->sendData);
                 m_nProceValue = tmpResponseIndex * 100.0 / gBinSizeWord;
                 emit Signal_progress(m_nProceValue,  "");
-                //                if(!(tmpResponseIndex % 100) || tmpResponseIndex < 3)
-                if(!(tmpResponseIndex % 100))
+                if(!(tmpResponseIndex % 1000))
                 {
-
                     double completed_percentage = tmpResponseIndex * 1.0 / gBinSizeWord;
                     double time_elapsed = time.elapsed() / 1000.0;
                     // 计算总时间和剩余时间
@@ -264,12 +275,17 @@ void WorkerDownloadThread::SubBoardUpdate(void)
                     emit Signal_progress(m_nProceValue,  QString("index=%1(%2)").arg(tmpResponseIndex).arg(gBinSizeWord));
                     pMotor->eSendSt = MUPDATE_SENDED_SUCC ;
                 }
+
                 break;
             }
+            case MUPDATE_ERROR:
+                //                emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_ERROR. Finish Done!");
+                break;
             default:
                 ERR("-> MUPDATE_(ERR)\r\n");
                 break;
         }
+        msleep(2);
     }
 }
 
@@ -374,21 +390,36 @@ int WorkerDownloadThread::Signal_SendCanMessage(CanMessage* p_sCanMessage)
     msg.setExtended(false);
     msg.setRTR(false);
     msg.setErrorFrame(false);
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    msg.setTimestamp(tv);
+    msg.setTx(true);
     CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
     if(canInterfaceIdList.isEmpty() == false)
     {
         CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
-        intf->sendMessage(msg);
 
-        char outmsg[256];
-        snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
-                 msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
-                 msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
-        if(msg.getId() == 193 && msg.getByte(0) != 0)
+        try
         {
-            qDebug() << __LINE__;
+            intf->sendMessage(msg);
+            char outmsg[256];
+            snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
+                     msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
+                     msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
+            //            qDebug() << QString(outmsg);
+            //            log_info(outmsg);
+            backend().getTrace()->InsertCanMessageTrace(msg);
         }
-        qDebug() << outmsg;
+
+        catch(char* ch)
+        {
+            log_info(QString(ch));
+        }
+        catch(...)
+        {
+            log_info(QString("The response times out. Please reinsert the device and try again!"));
+        }
+
     }
     else
     {

@@ -83,17 +83,59 @@ CandleApiInterface::CandleApiInterface(CandleApiDriver *driver, candle_handle ha
 
 
     _timings
-        // sample point: 50.0%
-        << CandleApiTiming(16000000,   10000, 520, 64, 11, 12)
-        << CandleApiTiming(16000000,   20000, 500, 50,  6,  8)
-        << CandleApiTiming(16000000,   50000, 500, 20,  6,  8)
-        << CandleApiTiming(16000000,   83333, 500, 12,  6,  8)
-        << CandleApiTiming(16000000,  100000, 500, 10,  6,  8)
-        << CandleApiTiming(16000000,  125000, 500,  8,  6,  8)
-        << CandleApiTiming(16000000,  250000, 500,  4,  6,  8)
-        << CandleApiTiming(16000000,  500000, 500,  2,  6,  8)
-        << CandleApiTiming(16000000,  800000, 500,  1,  8, 10)
-        << CandleApiTiming(16000000, 1000000, 500,  1,  6,  8)
+    //sample point: 50.0%
+            << CandleApiTiming(42000000, 10000,     500, 300,   5, 7)
+            << CandleApiTiming(42000000, 20000,     500, 150,   5, 7)
+            << CandleApiTiming(42000000, 50000,     500, 60,    5, 7)
+            << CandleApiTiming(42000000, 100000,    500, 30,    5, 7)
+            << CandleApiTiming(42000000, 125000,    500, 24,    5, 7)
+            << CandleApiTiming(42000000, 250000,    500, 12,    5, 7)
+            << CandleApiTiming(42000000, 500000,    500, 6,     5, 7)
+            << CandleApiTiming(42000000, 1000000,   500, 3,     5, 7)
+
+            // sample point: 62.6%
+            << CandleApiTiming(42000000, 10000, 623, 300, 7, 5)
+            << CandleApiTiming(42000000, 20000, 623, 150, 7, 5)
+            << CandleApiTiming(42000000, 50000, 625, 105, 3, 3)
+            << CandleApiTiming(42000000, 100000, 623, 30, 7, 5)
+            << CandleApiTiming(42000000, 125000, 625, 42, 3, 3)
+            << CandleApiTiming(42000000, 250000, 625, 21, 3, 3)
+            << CandleApiTiming(42000000, 500000, 623, 6, 7, 5)
+            << CandleApiTiming(42000000, 1000000, 623, 3, 7, 5)
+
+            // sample point: 75.0%
+            << CandleApiTiming(42000000, 10000, 750, 350, 7, 3)
+            << CandleApiTiming(42000000, 20000, 750, 175, 7, 3)
+            << CandleApiTiming(42000000, 50000, 750, 70, 7, 3)
+            << CandleApiTiming(42000000, 100000, 750, 35, 7, 3)
+            << CandleApiTiming(42000000, 125000, 750, 28, 7, 3)
+            << CandleApiTiming(42000000, 250000, 750, 14, 7, 3)
+            << CandleApiTiming(42000000, 500000, 750, 7, 7, 3)
+            << CandleApiTiming(42000000, 1000000, 762, 2, 14, 5)
+
+            // sample point: 87.5%
+            << CandleApiTiming(42000000, 10000, 867, 280, 11, 2)
+            << CandleApiTiming(42000000, 20000, 867, 140, 11, 2)
+            << CandleApiTiming(42000000, 50000, 875, 105, 5, 1)
+            << CandleApiTiming(42000000, 100000, 867, 28, 11, 2)
+            << CandleApiTiming(42000000, 125000, 875, 42, 5, 1)
+            << CandleApiTiming(42000000, 250000, 875, 21, 5, 1)
+            << CandleApiTiming(42000000, 500000, 875, 12, 4, 1) //857
+            << CandleApiTiming(42000000, 1000000, 857, 6, 4, 1);
+
+    _timings
+	
+    // sample point: 50.0%
+            << CandleApiTiming(16000000,   10000, 520, 64, 11, 12)
+            << CandleApiTiming(16000000,   20000, 500, 50,  6,  8)
+            << CandleApiTiming(16000000,   50000, 500, 20,  6,  8)
+            << CandleApiTiming(16000000,   83333, 500, 12,  6,  8)
+            << CandleApiTiming(16000000,  100000, 500, 10,  6,  8)
+            << CandleApiTiming(16000000,  125000, 500,  8,  6,  8)
+            << CandleApiTiming(16000000,  250000, 500,  4,  6,  8)
+            << CandleApiTiming(16000000,  500000, 500,  2,  6,  8)
+            << CandleApiTiming(16000000,  800000, 500,  1,  8, 10)
+            << CandleApiTiming(16000000, 1000000, 500,  1,  6,  8)
 
         // sample point: 62.5%
         << CandleApiTiming(16000000,   10000, 625, 64, 14,  9)
@@ -289,11 +331,22 @@ void CandleApiInterface::sendMessage(const CanMessage &msg)
     for (int i=0; i<8; i++) {
         frame.data[i] = msg.getByte(i);
     }
-
-    if (candle_frame_send(_handle, 0, &frame)) {
-        _numTx++;
-    } else {
-        _numTxErr++;
+    try     //捕获异常
+    {
+        if(candle_frame_send(_handle, 0, &frame))
+        {
+            _numTx++;
+        }
+        else
+        {
+            throw "Can sand Frame error";
+            _numTxErr++;
+        }
+    }
+    catch(...)
+    {
+        close();//关闭通道
+        throw(string("SendCanFramTimeout"));
     }
 }
 
@@ -320,15 +373,18 @@ bool CandleApiInterface::readMessage(QList<CanMessage> &msglist, unsigned int ti
                 msg.setByte(i, data[i]);
             }
 
-            uint32_t dev_ts = candle_frame_timestamp_us(&frame) - _deviceTicksStart;
-            uint64_t ts_us = _hostOffsetStart + dev_ts;
+            //            uint32_t dev_ts = candle_frame_timestamp_us(&frame) - _deviceTicksStart;
+            //            uint64_t ts_us = _hostOffsetStart + dev_ts;
 
-            uint64_t us_since_start = _backend.getUsecsSinceMeasurementStart();
-            if (us_since_start > 0x180000000) { // device timestamp overflow must have happend at least once
-                ts_us += us_since_start & 0xFFFFFFFF00000000;
-            }
-
-            msg.setTimestamp(ts_us/1000000, ts_us % 1000000);
+            //            uint64_t us_since_start = _backend.getUsecsSinceMeasurementStart();
+            //            if(us_since_start > 0x180000000)    // device timestamp overflow must have happend at least once
+            //            {
+            //                ts_us += us_since_start & 0xFFFFFFFF00000000;
+            //            }
+            //            msg.setTimestamp(ts_us / 1000000, ts_us % 1000000);
+            struct timeval tv;
+            gettimeofday(&tv, nullptr);
+            msg.setTimestamp(tv);
             msglist.append(msg);
             return true;
         }
@@ -389,3 +445,48 @@ void CandleApiInterface::update(candle_handle dev)
     _handle = dev;
 }
 
+#include <math.h>
+#include <list>
+int GetRegisterVal(int argc, char* argv[])
+{
+    double clk = 42000000;
+    int brp, Tseg1, Tseg2;
+    list<int>    baudrateList   =
+    {
+        10000,
+        20000,
+        50000,
+        100000,
+        125000,
+        250000,
+        500000,
+        1000000,
+    };
+    //    list<int>    ratioList   = {500, 625, 750, 875};
+    list<int>    ratioList   = {500};
+    foreach(int ratio, ratioList)
+    {
+        foreach(int baudrate, baudrateList)
+        {
+            for(brp = 1; brp < 512; brp++)
+            {
+                for(Tseg2 = 1; Tseg2 < 8; Tseg2++)
+                {
+                    for(Tseg1 = 1; Tseg1 < 16; Tseg1++)
+                    {
+                        double realVeal = 1.0 * (Tseg1 + 2) / (Tseg1 + Tseg2 + 2);
+                        double err =  realVeal - ratio / 1000.0;
+                        if(clk / brp / (Tseg1 + Tseg2 + 2) == baudrate &&  fabs(err) < 0.02)
+                        {
+                            //<< CandleApiTiming(48000000,  500000, 875,   6, 12, 2)
+                            printf("<< CandleApiTiming(%d, %d,%d,%d,%d,%d,%f,%f,\n", (int)clk, baudrate, ratio, brp, Tseg1, Tseg2,  err, realVeal);
+                        }
+                    }
+
+
+                }
+            }
+        }
+    }
+    return 0;
+}

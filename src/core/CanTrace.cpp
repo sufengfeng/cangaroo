@@ -42,6 +42,7 @@ CanTrace::CanTrace(Backend &backend, QObject *parent, int flushInterval)
     _flushTimer.setSingleShot(true);
     _flushTimer.setInterval(flushInterval);
     connect(&_flushTimer, SIGNAL(timeout()), this, SLOT(flushQueue()));
+    _isUpgradeStatue = false;			//升级过程中不刷新界面
 }
 
 unsigned long CanTrace::size()
@@ -88,7 +89,19 @@ void CanTrace::enqueueMessage(const CanMessage &msg, bool more_to_follow)
 
     emit messageEnqueued(idx);
 }
+void CanTrace::InsertCanMessageTrace(const CanMessage& msg)
+{
+    QMutexLocker locker(&_mutex);
+    int idx = size() + _newRows;
+    if(idx >= _data.size())
+    {
+        _data.resize(_data.size() + pool_chunk_size);
+    }
 
+    _data[idx].cloneFrom(msg);
+    _newRows++;
+    startTimer();
+}
 void CanTrace::flushQueue()
 {
     {
@@ -123,6 +136,10 @@ void CanTrace::flushQueue()
 
 void CanTrace::startTimer()
 {
+    if(_isUpgradeStatue)		//升级过程中不刷新界面
+    {
+        return ;
+    }
     QMutexLocker locker(&_timerMutex);
     if (!_isTimerRunning) {
         _isTimerRunning = true;

@@ -51,7 +51,12 @@ public:
     void saveCanDump(QFile &file);
     void saveVectorAsc(QFile &file);
 
-    bool getMuxedSignalFromCache(const CanDbSignal *signal, uint64_t *raw_value);
+    bool getMuxedSignalFromCache(const CanDbSignal* signal, uint64_t* raw_value);
+	void InsertCanMessageTrace(const CanMessage& msg);
+    bool SetUpgradeStatus(bool status)
+    {
+        return _isUpgradeStatue = status;
+    }
 
 signals:
     void messageEnqueued(int idx);
@@ -74,6 +79,7 @@ private:
     int _dataRowsUsed;
     int _newRows;
     bool _isTimerRunning;
+    bool _isUpgradeStatue;
 
     QMap<const CanDbSignal*,uint64_t> _muxCache;
 

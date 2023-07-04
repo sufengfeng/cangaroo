@@ -27,8 +27,8 @@
 #include "LinearTraceViewModel.h"
 #include "AggregatedTraceViewModel.h"
 #include "TraceFilterModel.h"
-
-TraceWindow::TraceWindow(QWidget *parent, Backend &backend) :
+#include <core/Backend.h>
+TraceWindow::TraceWindow(QWidget* parent, Backend& backend) :
     ConfigurableWidget(parent),
     ui(new Ui::TraceWindow),
     _backend(&backend)
@@ -76,8 +76,8 @@ TraceWindow::TraceWindow(QWidget *parent, Backend &backend) :
     ui->cbTimestampMode->addItem("delta", 2);
     setTimestampMode(timestamp_mode_delta);
 
-    connect(_linearTraceViewModel, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(rowsInserted(QModelIndex,int,int)));
-
+    connect(_linearTraceViewModel, SIGNAL(rowsInserted(QModelIndex, int, int)), this, SLOT(rowsInserted(QModelIndex, int, int)));
+    connect(ui->pushButton_Clear, &QPushButton::clicked, this, &TraceWindow::on_cbClearTrace);
     connect(ui->filterLineEdit, SIGNAL(textChanged(QString)), this, SLOT(on_cbFilterChanged()));
 }
 
@@ -207,7 +207,10 @@ void TraceWindow::on_cbTimestampMode_currentIndexChanged(int index)
 {
     setTimestampMode((timestamp_mode_t)ui->cbTimestampMode->itemData(index).toInt());
 }
-
+void TraceWindow::on_cbClearTrace()
+{
+    _backend->clearTrace();
+}
 void TraceWindow::on_cbFilterChanged()
 {
     _aggFilteredModel->setFilterText(ui->filterLineEdit->text());

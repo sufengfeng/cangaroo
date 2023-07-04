@@ -37,6 +37,7 @@ CanMessage::CanMessage()
 {
     _timestamp.tv_sec = 0;
     _timestamp.tv_usec = 0;
+    _isTx = false;
 
 }
 
@@ -45,6 +46,7 @@ CanMessage::CanMessage(uint32_t can_id)
 {
     _timestamp.tv_sec = 0;
     _timestamp.tv_usec = 0;
+    _isTx = false;
     setId(can_id);
 }
 
@@ -66,6 +68,7 @@ void CanMessage::cloneFrom(const CanMessage &msg)
 
     _interface = msg._interface;
     _timestamp = msg._timestamp;
+    _isTx = msg._isTx;
 }
 
 
@@ -132,7 +135,14 @@ bool CanMessage::isBRS() const {
 void CanMessage::setBRS(const bool isBRS) {
     _isBRS = isBRS;
 }
-
+bool CanMessage::isTx()const
+{
+    return _isTx;
+}
+void CanMessage::setTx(const bool isTx)
+{
+    _isTx = isTx;
+}
 bool CanMessage::isErrorFrame() const {
 	return (_raw_id & id_flag_error) != 0;
 }

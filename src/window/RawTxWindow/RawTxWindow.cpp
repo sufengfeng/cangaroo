@@ -26,8 +26,9 @@
 #include <QTimer>
 #include <core/Backend.h>
 #include <driver/CanInterface.h>
-
-RawTxWindow::RawTxWindow(QWidget *parent, Backend &backend) :
+#include <core/CanTrace.h>
+#include <QMessageBox>
+RawTxWindow::RawTxWindow(QWidget* parent, Backend& backend) :
     ConfigurableWidget(parent),
     ui(new Ui::RawTxWindow),
     _backend(backend)
@@ -538,16 +539,31 @@ void RawTxWindow::sendRawMessage()
     if(ui->checkbox_FD->isChecked())
         msg.setFD(true);
 
-    CanInterface *intf = _backend.getInterfaceById((CanInterfaceId)ui->comboBoxInterface->currentData().toUInt());
-    intf->sendMessage(msg);
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    msg.setTimestamp(tv);
+    msg.setTx(true);
+    try
+    {
+        CanInterface* intf = _backend.getInterfaceById((CanInterfaceId)ui->comboBoxInterface->currentData().toUInt());
 
+        intf->sendMessage(msg);
+        _backend.getTrace()->InsertCanMessageTrace(msg);
 
-    char outmsg[256];
-    snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
-             msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
-             msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
-    log_info(outmsg);
-
+        char outmsg[256];
+        snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
+                 msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
+                 msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
+        log_info(outmsg);
+    }
+    catch(char* ch)
+    {
+        QMessageBox::warning(this, tr("warning"), QString(ch));
+    }
+    catch(...)
+    {
+        printf("The response times out. Please reinsert the device and try again!");
+    }
 }
 
 bool RawTxWindow::saveXML(Backend &backend, QDomDocument &xml, QDomElement &root)

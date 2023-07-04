@@ -78,18 +78,26 @@ void Console::setLocalEchoEnabled(bool set)
 
 void Console::keyPressEvent(QKeyEvent* e)
 {
-    //    switch (e->key()) {
-    //    case Qt::Key_Backspace:
-    //    case Qt::Key_Left:
-    //    case Qt::Key_Right:
-    //    case Qt::Key_Up:
-    //    case Qt::Key_Down:
-    //        break;
-    //    default:
-    //        if (m_localEchoEnabled)
-    //            QPlainTextEdit::keyPressEvent(e);
-    //        emit getData(e->text().toLocal8Bit());
-    //    }
+    switch(e->key())
+    {
+        case Qt::Key_Backspace:
+        case Qt::Key_Left:
+        case Qt::Key_Right:
+        case Qt::Key_Up:
+        case Qt::Key_Down:
+            //        case Qt::Key_Delete:
+            QPlainTextEdit::keyPressEvent(e);
+            break;
+        default:
+            //            if(m_localEchoEnabled)
+            //            {
+            //                QPlainTextEdit::keyPressEvent(e);
+            //            }
+            //            emit getData(e->text().toLocal8Bit());
+
+            break;
+
+    }
     if(m_localEchoEnabled)
     {
         QPlainTextEdit::keyPressEvent(e);
