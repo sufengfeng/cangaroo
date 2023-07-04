@@ -45,7 +45,7 @@
 #else
     #include <driver/CandleApiDriver/CandleApiDriver.h>
 #endif
-
+#include <functional>
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -90,10 +90,16 @@ MainWindow::MainWindow(QWidget* parent) :
     m_sMainWindow_terminal = new MainWindow_terminal;
     //    connect(m_ui->actionConfigure, &QAction::triggered, this, &MainWindow_terminal::showConfig);
     connect(m_sMainWindow_terminal, &MainWindow_terminal::EmitSignalShowCangaroo, this, &MainWindow::show);
-    connect(backend().getTrace(), &CanTrace::messageEnqueued, m_sMainWindow_terminal, &MainWindow_terminal::SlotReveiveCanData);
     connect(this, &MainWindow::EmitSignalCanConnectStatus, m_sMainWindow_terminal, &MainWindow_terminal::CanConnectStatusChanged);
     connect(m_sMainWindow_terminal, &MainWindow_terminal::EmitSignalOpenCanDevice, this, &MainWindow::startMeasurement);
     connect(m_sMainWindow_terminal, &MainWindow_terminal::EmitSignalCloseCanDevice, this, &MainWindow::stopMeasurement);
+
+    connect(backend().getTrace(), &CanTrace::messageEnqueued, m_sMainWindow_terminal, &MainWindow_terminal::SlotReveiveCanData);
+    //升级程序通过回调函数直接处理,实测回调函数没有信号槽处理速度快
+    //    backend().getTrace()->bindFun2([this](int i)
+    //                                   {
+    //                                                   return m_sMainWindow_terminal->CallBackReveiveCanData(i);
+    //                                   });
 }
 
 MainWindow::~MainWindow()

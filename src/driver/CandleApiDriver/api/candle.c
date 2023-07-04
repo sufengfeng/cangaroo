@@ -483,9 +483,17 @@ bool __stdcall DLL candle_channel_stop(candle_handle hdev, uint8_t ch)
 
 bool __stdcall DLL candle_frame_send(candle_handle hdev, uint8_t ch, candle_frame_t *frame)
 {
+    if(hdev==NULL||frame==NULL){        //错误的指针
+
+        return FALSE;
+    }
     // TODO ensure device is open, check channel count..
     candle_device_t *dev = (candle_device_t*)hdev;
-
+    if (dev->winUSBHandle==INVALID_HANDLE_VALUE)        //为成功打开USB数据通道
+    {
+        dev->last_error = CANDLE_ERR_WINUSB_INITIALIZE;
+        return FALSE;
+    }
     unsigned long bytes_sent = 0;
 
     frame->echo_id = 0;

@@ -85,6 +85,7 @@ public:
     ~MainWindow_terminal();
 
     Backend& backend();
+    int  CallBackReveiveCanData(int idx);
 public slots:
     void SlotReveiveCanData(int idx);
     void CanConnectStatusChanged(int status);

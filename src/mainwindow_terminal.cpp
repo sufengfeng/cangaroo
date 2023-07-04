@@ -330,7 +330,15 @@ Backend& MainWindow_terminal::backend()
 {
     return Backend::instance();
 }
-
+int  MainWindow_terminal::CallBackReveiveCanData(int idx)
+{
+    //        SlotReveiveCanData(idx);
+    //    qDebug() << QString("Value[%1]").arg(idx);
+    //    CanTrace* p_sTrace = backend().getTrace();
+    //    const CanMessage* p_sCanMessage = p_sTrace->getMessage(idx);
+    //    m_sMainWindow_Download->HandleCanMessage(p_sCanMessage);
+    return 0;
+}
 
 //! [7]
 void MainWindow_terminal::SlotReveiveCanData(int idx)

@@ -140,8 +140,8 @@ private:
     //    bool SubBoard_watch_flag = false;
     //    int SubBoard_watch_pack = 0;
     //    int SubBoard_watch_total = 0;
-    QMutex qMutexSendPackage;
-
+    //    QMutex qMutexSendPackage;
+    int m_bFlagResponse = 2;
 };
 
 #endif // WORKERDOWNLOADTHREAD_H

@@ -106,8 +106,15 @@ void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
     else if(RxMessage->getId() == (SUB_FRONT_UPDATE_RES + m_nCanID))
     {
         tmpIndex = UI32_MAKE(pData[0], pData[1], pData[2], pData[3]);
-        if(tmpIndex <= pMotor->responseWordIndex + 1 && tmpIndex >= pMotor->responseWordIndex)
+        //        if(tmpIndex <= pMotor->responseWordIndex + 1 && tmpIndex >= pMotor->responseWordIndex)
+        if(tmpIndex == pMotor->responseWordIndex + 1)
         {
+            if(tmpIndex > 0 && tmpIndex < gBinSizeWord)
+            {
+                m_bFlagResponse = 2;
+                memcpy(&pMotor->sendData, m_sBinFileRawData.data() + ((tmpIndex - 1) * 4), sizeof(int));
+                SubBoardUpdateSendPackData(m_nCanID, tmpIndex, pMotor->sendData);
+            }
             pMotor->responseWordIndex = tmpIndex;
             pMotor->eSendSt = MUPDATE_SENDING_PACK;
         }
@@ -249,6 +256,11 @@ void WorkerDownloadThread::SubBoardUpdate(void)
             }
             case MUPDATE_SENDING_PACK://3
             {
+                if(m_bFlagResponse)        //最近有发送跳过周期发送
+                {
+                    m_bFlagResponse--;
+                    break;
+                }
                 tmpResponseIndex = pMotor->responseWordIndex;
                 if(tmpResponseIndex == 0 || tmpResponseIndex > gBinSizeWord * 2)
                 {
@@ -285,7 +297,7 @@ void WorkerDownloadThread::SubBoardUpdate(void)
                 ERR("-> MUPDATE_(ERR)\r\n");
                 break;
         }
-        msleep(2);
+        msleep(1);
     }
 }
 

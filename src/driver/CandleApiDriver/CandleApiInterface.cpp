@@ -339,8 +339,8 @@ void CandleApiInterface::sendMessage(const CanMessage &msg)
         }
         else
         {
-            throw "Can sand Frame error";
             _numTxErr++;
+            throw "Can sand Frame error";
         }
     }
     catch(...)

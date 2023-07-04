@@ -57,7 +57,7 @@ public:
     {
         return _isUpgradeStatue = status;
     }
-
+    void bindFun2(const std::function<int (int)>& fun2);
 signals:
     void messageEnqueued(int idx);
     void beforeAppend(int num_messages);
@@ -88,6 +88,6 @@ private:
     QTimer _flushTimer;
 
     void startTimer();
-
+    std::function<int (int)> m_fun2;
 
 };

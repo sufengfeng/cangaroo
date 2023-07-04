@@ -88,6 +88,15 @@ void CanTrace::enqueueMessage(const CanMessage &msg, bool more_to_follow)
     }
 
     emit messageEnqueued(idx);
+    //        if(m_fun2 != nullptr)       //执行回调函数
+    //        {
+    //            m_fun2(idx);
+    //        }
+}
+
+void CanTrace::bindFun2(const std::function<int (int)>& fun2)
+{
+    m_fun2 = fun2;
 }
 void CanTrace::InsertCanMessageTrace(const CanMessage& msg)
 {
