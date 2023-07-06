@@ -85,7 +85,7 @@ public:
     ~MainWindow_terminal();
 
     Backend& backend();
-    int  CallBackReveiveCanData(int idx);
+    int  CallBackReveiveCanData(CanMessage message);
 public slots:
     void SlotReveiveCanData(int idx);
     void CanConnectStatusChanged(int status);
@@ -141,6 +141,7 @@ private:
     //获取内容的保存路径
     QString m_QStrFileName;
     QString m_QStLogData;
+    QByteArray tmpByteArray;
 };
 
 #endif // MAINWINDOW_H

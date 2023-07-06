@@ -96,10 +96,10 @@ MainWindow::MainWindow(QWidget* parent) :
 
     connect(backend().getTrace(), &CanTrace::messageEnqueued, m_sMainWindow_terminal, &MainWindow_terminal::SlotReveiveCanData);
     //升级程序通过回调函数直接处理,实测回调函数没有信号槽处理速度快
-    //    backend().getTrace()->bindFun2([this](int i)
-    //                                   {
-    //                                                   return m_sMainWindow_terminal->CallBackReveiveCanData(i);
-    //                                   });
+    backend().getTrace()->bindFun2([this](CanMessage message)
+                                   {
+                                                   return m_sMainWindow_terminal->CallBackReveiveCanData(message);
+                                   });
 }
 
 MainWindow::~MainWindow()

@@ -13,12 +13,19 @@ WorkerDownloadThread::WorkerDownloadThread()
     m_nCanID = 12;
     m_nUpdateType = 0;
     m_nProceValue = 0;
+    _IsRunning = 1;
 }
 
 WorkerDownloadThread::~WorkerDownloadThread()
 {
-}
+    _IsRunning = 0;
+    this->exit(0);
 
+}
+void WorkerDownloadThread::stopTread(void)
+{
+    _IsRunning = 0;
+}
 void WorkerDownloadThread::StartUpdateHardWare(QString filePathName, int canid, int updateType)
 {
     m_stopFlag = false;
@@ -37,7 +44,7 @@ void WorkerDownloadThread::StopDownload(void)
 void WorkerDownloadThread::run()
 {
     //该线程管理类对应的线程实际运行代码位置
-    while(1)
+    while(_IsRunning)
     {
         while(!m_stopFlag)
         {
@@ -48,7 +55,7 @@ void WorkerDownloadThread::run()
             //            msleep(10000);
             StopDownload();
         }
-        msleep(1000);
+        msleep(10);
     }
 }
 void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
@@ -264,16 +271,19 @@ void WorkerDownloadThread::SubBoardUpdate(void)
                 tmpResponseIndex = pMotor->responseWordIndex;
                 if(tmpResponseIndex == 0 || tmpResponseIndex > gBinSizeWord * 2)
                 {
-                    log_error(QString("Error[%1],skip update").arg(tmpResponseIndex));
+                    emit Signal_progress(m_nProceValue,  QString("update false! Error Index[%1],skip update").arg(tmpResponseIndex));
                     pMotor->eSendSt = MUPDATE_ERROR ;
                     return ;
                 }
                 memcpy(&pMotor->sendData, m_sBinFileRawData.data() + ((tmpResponseIndex - 1) * 4), sizeof(int));
                 SubBoardUpdateSendPackData(m_nCanID, tmpResponseIndex, pMotor->sendData);
                 m_nProceValue = tmpResponseIndex * 100.0 / gBinSizeWord;
-                emit Signal_progress(m_nProceValue,  "");
-                if(!(tmpResponseIndex % 1000))
+                //                emit Signal_progress(m_nProceValue,  "");
+                static int counterTimeout = 0;
+
+                if(tmpResponseIndex > 20 && counterTimeout++ > 1000)
                 {
+                    counterTimeout = 0;
                     double completed_percentage = tmpResponseIndex * 1.0 / gBinSizeWord;
                     double time_elapsed = time.elapsed() / 1000.0;
                     // 计算总时间和剩余时间
@@ -297,7 +307,7 @@ void WorkerDownloadThread::SubBoardUpdate(void)
                 ERR("-> MUPDATE_(ERR)\r\n");
                 break;
         }
-        msleep(1);
+        msleep(2);
     }
 }
 
@@ -315,13 +325,13 @@ void WorkerDownloadThread::bsp_SubBoard_Update_Start(int canId, int updateType)
     {
         tmpCandata[1] = i;
         canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
-        Signal_SendCanMessage(&canMessage);
+        Signal_SendCanMessage(canMessage);
         msleep(100);
     }
     //关闭电机
     tmpCandata[1] = 0x16;
     canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
-    Signal_SendCanMessage(&canMessage);
+    Signal_SendCanMessage(canMessage);
     msleep(100);
 
     //发送更新类型
@@ -329,7 +339,7 @@ void WorkerDownloadThread::bsp_SubBoard_Update_Start(int canId, int updateType)
     tmpCandata[3] = updateType;
 
     canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
-    Signal_SendCanMessage(&canMessage);
+    Signal_SendCanMessage(canMessage);
     msleep(100);
 }
 
@@ -349,7 +359,7 @@ void WorkerDownloadThread::bsp_SubBoard_Update_InitCmd(u32 stdID, u32 binSize, u
     canMessage.setLength(8);
     canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
     canMessage.setId(SUB_FRONT_UPDATE_START + stdID);
-    Signal_SendCanMessage(&canMessage);
+    Signal_SendCanMessage(canMessage);
     msleep(100);
 }
 
@@ -372,66 +382,40 @@ void WorkerDownloadThread::SubBoardUpdateSendPackData(u32 stdID, unint32 dataInd
     canMessage.setLength(8);
     canMessage.setData(tmpCandata[0], tmpCandata[1], tmpCandata[2], tmpCandata[3], tmpCandata[4], tmpCandata[5], tmpCandata[6], tmpCandata[7]);
     canMessage.setId(SUB_FRONT_UPDATE_SEND + stdID);
-    Signal_SendCanMessage(&canMessage);
-    msleep(5);
+    Signal_SendCanMessage(canMessage);
 }
 Backend& WorkerDownloadThread::backend()
 {
     return Backend::instance();
 }
 
-int WorkerDownloadThread::Signal_SendCanMessage(CanMessage* p_sCanMessage)
+int WorkerDownloadThread::Signal_SendCanMessage(CanMessage canMessage)
 {
     int iRet = 0;
-    CanMessage msg;
-    int sendIndex = 0;
-    int dlc = p_sCanMessage->getLength();
-    if(dlc > 8)
-    {
-        dlc = 8;
-    }
-
-    // Set payload data
-    for(uint8_t i = 0; (i < 8 && sendIndex < p_sCanMessage->getLength()); i++)
-    {
-        msg.setDataAt(i, p_sCanMessage->getByte(sendIndex));
-        sendIndex++;
-    }
-    msg.setId(p_sCanMessage->getId());
-    msg.setLength(dlc);
-    msg.setExtended(false);
-    msg.setRTR(false);
-    msg.setErrorFrame(false);
     struct timeval tv;
     gettimeofday(&tv, nullptr);
-    msg.setTimestamp(tv);
-    msg.setTx(true);
+    canMessage.setTimestamp(tv);
+    canMessage.setTx(true);
     CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
     if(canInterfaceIdList.isEmpty() == false)
     {
         CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
-
         try
         {
-            intf->sendMessage(msg);
+            intf->sendMessage(canMessage);
             char outmsg[256];
             snprintf(outmsg, 256, "Send [%s] to %d on port %s [ext=%u rtr=%u err=%u fd=%u brs=%u]",
-                     msg.getDataHexString().toLocal8Bit().constData(), msg.getId(), intf->getName().toLocal8Bit().constData(),
-                     msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
+                     canMessage.getDataHexString().toLocal8Bit().constData(), canMessage.getId(), intf->getName().toLocal8Bit().constData(),
+                     canMessage.isExtended(), canMessage.isRTR(), canMessage.isErrorFrame(), canMessage.isFD(), canMessage.isBRS());
             //            qDebug() << QString(outmsg);
             //            log_info(outmsg);
-            backend().getTrace()->InsertCanMessageTrace(msg);
-        }
-
-        catch(char* ch)
-        {
-            log_info(QString(ch));
+            backend().getTrace()->InsertCanMessageTrace(canMessage);
         }
         catch(...)
         {
+            backend().stopMeasurement();    //关闭通道
             log_info(QString("The response times out. Please reinsert the device and try again!"));
         }
-
     }
     else
     {

@@ -33,7 +33,7 @@
 #define UI32_HILO8(ui32)                ((unint08)(((ui32) >> 16) & MASK_LO08))
 #define UI32_LOHI8(ui32)                ((unint08)(((ui32) >>  8) & MASK_LO08))
 #define UI32_LOLO8(ui32)                ((unint08)(((ui32)      ) & MASK_LO08))
-#define INF printf
+//#define INF printf
 typedef enum  _TAG_ENUM_UPDATE_MOTORS_STATE
 {
     MUPDATE_NULL = 0,
@@ -109,13 +109,14 @@ public:
     void StartUpdateHardWare(QString filePathName, int canid, int updateType);
     void HandleCanMessage(const CanMessage* p_sCanMessage);
     void StopDownload(void);
+    void stopTread(void);
 signals:
     void Signal_progress(const int value, QString str);
 
 protected:
     void    run();    //虚函数
 private:
-    int Signal_SendCanMessage(CanMessage* psCanMessage);
+    int Signal_SendCanMessage(CanMessage canMessage);
     void UpdateSubBoardMain(void);
     unint32 SubBoardUpdateStateReady(void);
     unint32 SubBoardUpdateInit(void);
@@ -130,6 +131,7 @@ private:
     uint32_t m_nUpdateType;
     QString m_sFilePathName;
     int m_nProceValue;
+    bool _IsRunning;
     //    QFileInfo* m_sQFileInfo ;
     QByteArray m_sBinFileRawData;
     unint32 gBinSizeWord = 0;

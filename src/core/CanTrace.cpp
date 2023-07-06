@@ -30,19 +30,19 @@
 #include <core/CanDbSignal.h>
 #include <driver/CanInterface.h>
 
-CanTrace::CanTrace(Backend &backend, QObject *parent, int flushInterval)
-  : QObject(parent),
-    _backend(backend),
-    _isTimerRunning(false),
-    _mutex(QMutex::Recursive),
-    _timerMutex(),
-    _flushTimer(this)
+CanTrace::CanTrace(Backend& backend, QObject* parent, int flushInterval)
+    : QObject(parent),
+      _backend(backend),
+      _isTimerRunning(false),
+      _mutex(QMutex::Recursive),
+      _timerMutex(),
+      _flushTimer(this)
 {
     clear();
     _flushTimer.setSingleShot(true);
     _flushTimer.setInterval(flushInterval);
     connect(&_flushTimer, SIGNAL(timeout()), this, SLOT(flushQueue()));
-    _isUpgradeStatue = false;			//升级过程中不刷新界面
+    _isUpgradeStatue = false;           //升级过程中不刷新界面
 }
 
 unsigned long CanTrace::size()
@@ -61,40 +61,42 @@ void CanTrace::clear()
     emit afterClear();
 }
 
-const CanMessage *CanTrace::getMessage(int idx)
+const CanMessage* CanTrace::getMessage(int idx)
 {
     QMutexLocker locker(&_mutex);
-    if (idx >= (_dataRowsUsed + _newRows)) {
+    if(idx >= (_dataRowsUsed + _newRows))
+    {
         return 0;
-    } else {
+    }
+    else
+    {
         return &_data[idx];
     }
 }
 
-void CanTrace::enqueueMessage(const CanMessage &msg, bool more_to_follow)
+void CanTrace::enqueueMessage(const CanMessage& msg, bool more_to_follow)
 {
     QMutexLocker locker(&_mutex);
 
     int idx = size() + _newRows;
-    if (idx>=_data.size()) {
+    if(idx >= _data.size())
+    {
         _data.resize(_data.size() + pool_chunk_size);
     }
 
     _data[idx].cloneFrom(msg);
     _newRows++;
 
-    if (!more_to_follow) {
+    if(!more_to_follow)
+    {
         startTimer();
     }
 
     emit messageEnqueued(idx);
-    //        if(m_fun2 != nullptr)       //执行回调函数
-    //        {
-    //            m_fun2(idx);
-    //        }
+
 }
 
-void CanTrace::bindFun2(const std::function<int (int)>& fun2)
+void CanTrace::bindFun2(const std::function<int (CanMessage)>& fun2)
 {
     m_fun2 = fun2;
 }
@@ -119,17 +121,22 @@ void CanTrace::flushQueue()
     }
 
     QMutexLocker locker(&_mutex);
-    if (_newRows) {
+    if(_newRows)
+    {
         emit beforeAppend(_newRows);
 
         // see if we have muxed messages. cache muxed values, if any.
-        MeasurementSetup &setup = _backend.getSetup();
-        for (int i=_dataRowsUsed; i<_dataRowsUsed + _newRows; i++) {
-            CanMessage &msg = _data[i];
-            CanDbMessage *dbmsg = setup.findDbMessage(msg);
-            if (dbmsg && dbmsg->getMuxer()) {
-                foreach (CanDbSignal *signal, dbmsg->getSignals()) {
-                    if (signal->isMuxed() && signal->isPresentInMessage(msg)) {
+        MeasurementSetup& setup = _backend.getSetup();
+        for(int i = _dataRowsUsed; i < _dataRowsUsed + _newRows; i++)
+        {
+            CanMessage& msg = _data[i];
+            CanDbMessage* dbmsg = setup.findDbMessage(msg);
+            if(dbmsg && dbmsg->getMuxer())
+            {
+                foreach(CanDbSignal* signal, dbmsg->getSignals())
+                {
+                    if(signal->isMuxed() && signal->isPresentInMessage(msg))
+                    {
                         _muxCache[signal] = signal->extractRawDataFromMessage(msg);
                     }
                 }
@@ -145,44 +152,51 @@ void CanTrace::flushQueue()
 
 void CanTrace::startTimer()
 {
-    if(_isUpgradeStatue)		//升级过程中不刷新界面
+    if(_isUpgradeStatue)        //升级过程中不刷新界面
     {
         return ;
     }
     QMutexLocker locker(&_timerMutex);
-    if (!_isTimerRunning) {
+    if(!_isTimerRunning)
+    {
         _isTimerRunning = true;
         QMetaObject::invokeMethod(&_flushTimer, "start", Qt::QueuedConnection);
     }
 }
 
-void CanTrace::saveCanDump(QFile &file)
+void CanTrace::saveCanDump(QFile& file)
 {
     QMutexLocker locker(&_mutex);
     QTextStream stream(&file);
-    for (unsigned int i=0; i<size(); i++) {
-        CanMessage *msg = &_data[i];
+    for(unsigned int i = 0; i < size(); i++)
+    {
+        CanMessage* msg = &_data[i];
         QString line;
         line.append(QString().sprintf("(%.6f) ", msg->getFloatTimestamp()));
         line.append(_backend.getInterfaceName(msg->getInterfaceId()));
-        if (msg->isExtended()) {
+        if(msg->isExtended())
+        {
             line.append(QString().sprintf(" %08X#", msg->getId()));
-        } else {
+        }
+        else
+        {
             line.append(QString().sprintf(" %03X#", msg->getId()));
         }
-        for (int i=0; i<msg->getLength(); i++) {
+        for(int i = 0; i < msg->getLength(); i++)
+        {
             line.append(QString().sprintf("%02X", msg->getByte(i)));
         }
         stream << line << endl;
     }
 }
 
-void CanTrace::saveVectorAsc(QFile &file)
+void CanTrace::saveVectorAsc(QFile& file)
 {
     QMutexLocker locker(&_mutex);
     QTextStream stream(&file);
 
-    if (_data.length()<1) {
+    if(_data.length() < 1)
+    {
         return;
     }
 
@@ -200,29 +214,31 @@ void CanTrace::saveVectorAsc(QFile &file)
     stream << "Begin Triggerblock " << dt_start << endl;
     stream << "   0.000000 Start of measurement" << endl;
 
-    for (unsigned int i=0; i<size(); i++) {
-        CanMessage &msg = _data[i];
+    for(unsigned int i = 0; i < size(); i++)
+    {
+        CanMessage& msg = _data[i];
 
         double t_current = msg.getFloatTimestamp();
         QString id_hex_str = QString().sprintf("%x", msg.getId());
         QString id_dec_str = QString().sprintf("%d", msg.getId());
-        if (msg.isExtended()) {
+        if(msg.isExtended())
+        {
             id_hex_str.append("x");
             id_dec_str.append("x");
         }
 
         // TODO how to handle RTR flag?
         QString line = QString().sprintf(
-            "%11.6lf 1  %-15s %s   d %d %s  Length = %d BitCount = %d ID = %s",
-            t_current-t_start,
-            id_hex_str.toStdString().c_str(),
-            "Rx", // TODO handle Rx/Tx
-            msg.getLength(),
-            msg.getDataHexString().toStdString().c_str(),
-            0, // TODO Length (transfer time in ns)
-            0, // TODO BitCount (overall frame length, including stuff bits)
-            id_dec_str.toStdString().c_str()
-        );
+                                       "%11.6lf 1  %-15s %s   d %d %s  Length = %d BitCount = %d ID = %s",
+                                       t_current - t_start,
+                                       id_hex_str.toStdString().c_str(),
+                                       "Rx", // TODO handle Rx/Tx
+                                       msg.getLength(),
+                                       msg.getDataHexString().toStdString().c_str(),
+                                       0, // TODO Length (transfer time in ns)
+                                       0, // TODO BitCount (overall frame length, including stuff bits)
+                                       id_dec_str.toStdString().c_str()
+                       );
 
         stream << line << endl;
     }
@@ -230,12 +246,15 @@ void CanTrace::saveVectorAsc(QFile &file)
     stream << "End TriggerBlock" << endl;
 }
 
-bool CanTrace::getMuxedSignalFromCache(const CanDbSignal *signal, uint64_t *raw_value)
+bool CanTrace::getMuxedSignalFromCache(const CanDbSignal* signal, uint64_t* raw_value)
 {
-    if (_muxCache.contains(signal)) {
+    if(_muxCache.contains(signal))
+    {
         *raw_value = _muxCache[signal];
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 }

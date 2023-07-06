@@ -68,6 +68,10 @@ void CanListener::run()
             for(CanMessage msg : rxMessages)
             {
                 trace->enqueueMessage(msg, false);
+                if(trace->m_fun2 != nullptr)       //执行回调函数
+                {
+                    trace->m_fun2(msg);
+                }
             }
             rxMessages.clear();
         }

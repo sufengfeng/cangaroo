@@ -556,12 +556,9 @@ void RawTxWindow::sendRawMessage()
                  msg.isExtended(), msg.isRTR(), msg.isErrorFrame(), msg.isFD(), msg.isBRS());
         log_info(outmsg);
     }
-    catch(char* ch)
-    {
-        QMessageBox::warning(this, tr("warning"), QString(ch));
-    }
     catch(...)
     {
+        _backend.stopMeasurement();    //关闭通道
         printf("The response times out. Please reinsert the device and try again!");
     }
 }

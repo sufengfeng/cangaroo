@@ -258,12 +258,19 @@ static bool candle_dev_interal_open(candle_handle hdev)
         dev->last_error = CANDLE_ERR_PARSE_IF_DESCR;
         goto winusb_free;
     }
-
     char use_raw_io = 1;
     if (!WinUsb_SetPipePolicy(dev->winUSBHandle, dev->bulkInPipe, RAW_IO, sizeof(use_raw_io), &use_raw_io)) {
         dev->last_error = CANDLE_ERR_SET_PIPE_RAW_IO;
         goto winusb_free;
-    } 
+    }
+
+    long  timeout = 500;            //设置输出超时时间为500ms
+    if (!WinUsb_SetPipePolicy(dev->winUSBHandle, dev->bulkOutPipe, PIPE_TRANSFER_TIMEOUT, sizeof(timeout),
+                              &timeout)) {
+        dev->last_error = CANDLE_ERR_SET_PIPE_TRANSFER_TIMEOUT;
+        goto winusb_free;
+    }
+
 
     if (!candle_ctrl_set_host_format(dev)) {
         goto winusb_free;
@@ -494,6 +501,7 @@ bool __stdcall DLL candle_frame_send(candle_handle hdev, uint8_t ch, candle_fram
         dev->last_error = CANDLE_ERR_WINUSB_INITIALIZE;
         return FALSE;
     }
+
     unsigned long bytes_sent = 0;
 
     frame->echo_id = 0;

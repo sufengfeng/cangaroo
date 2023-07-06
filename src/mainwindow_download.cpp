@@ -1,6 +1,56 @@
 #include "mainwindow_download.h"
 #include "ui_mainwindow_download.h"
 #include "workerdownloadthread.h"
+bool isDirExist(QString fullPath)
+{
+    QDir dir(fullPath);
+    if(dir.exists())
+    {
+        return true;
+    }
+    else
+    {
+        bool ok = dir.mkdir(fullPath);//只创建一级子目录，即必须保证上级目录存在
+        return ok;
+    }
+}
+QString GetConfigDowndFilePath(void)
+{
+    QString filePath ;
+    QString dir_str = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    //    qDebug() << dir_str;
+    if(isDirExist(dir_str))
+    {
+        QSettings* settings = new QSettings(dir_str + "/setting.ini", QSettings::IniFormat);
+        settings->beginGroup("MAIN");
+        filePath = settings->value("DOWNLOAD_FILE_PATH", "").toString();
+        //        QString version = settings->value("VERSION", "x.y.z").toString();
+        //        qDebug() << "LEARN_OBJECT=" << filePath << endl; //输出至控制台
+        //        qDebug() << "QT_VERSION=" << version << endl; //输出至控制台
+        settings->endGroup();
+        delete settings;
+    }
+    return  filePath;
+}
+void SetConfigDowndFilePath(QString filepath)
+{
+    QString dir_str = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) ;
+    if(isDirExist(dir_str))
+    {
+        QSettings* settings = new QSettings(dir_str + "/setting.ini", QSettings::IniFormat);
+
+        settings->beginGroup("MAIN");
+        settings->setValue("DOWNLOAD_FILE_PATH", filepath);
+        settings->setValue("VERSION", "1.4.1");
+        settings->endGroup();
+
+        settings->beginGroup("OTHER");
+        settings->setValue("CSDN_DESCRIPTION", "Share My Learning exprience");
+        settings->endGroup();
+        delete settings;
+    }
+}
+
 MainWindow_Download::MainWindow_Download(QWidget* parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow_Download)
@@ -12,10 +62,17 @@ MainWindow_Download::MainWindow_Download(QWidget* parent) :
     connect(ui->pushButton_Open, &QPushButton::clicked, this, &MainWindow_Download::OpenFile);
     connect(ui->pushButton_Download, &QPushButton::clicked, this, &MainWindow_Download::DownloadFile);
     connect(m_sWorkerDownloadThread, &WorkerDownloadThread::Signal_progress, this, &MainWindow_Download::Slot_UpdateProcess);
+    m_sFilePathName =    GetConfigDowndFilePath();
+    if(!m_sFilePathName.isEmpty())
+    {
+        ui->lineEdit->setText(m_sFilePathName);
+    }
 }
 
 MainWindow_Download::~MainWindow_Download()
 {
+    m_sWorkerDownloadThread->stopTread();
+    m_sWorkerDownloadThread->exit(0);       //停止线程
     delete m_sWorkerDownloadThread;
     delete ui;
 }
@@ -51,10 +108,11 @@ void MainWindow_Download::OpenFile(void)
         curPath = fileInfo->filePath();
         delete  fileInfo;
     }
-
-    m_sFilePathName = QFileDialog::getOpenFileName(this, tr("请选择需要打开的文件"), curPath, filter);
-    if(!m_sFilePathName.isEmpty())
+    QString tmpFileName;
+    tmpFileName = QFileDialog::getOpenFileName(this, tr("请选择需要打开的文件"), curPath, filter);
+    if(!tmpFileName.isEmpty())
     {
+        m_sFilePathName = tmpFileName;
         ui->tabWidget->setCurrentIndex(1);
         QFileInfo* fileInfo = new QFileInfo(m_sFilePathName);
 
@@ -110,6 +168,7 @@ void MainWindow_Download::DownloadFile(void)
     ui->tabWidget->setCurrentIndex(0);
     int canid = ui->spinBox_CanID->value();
     int updateType = ui->comboBox_UpdateType->currentIndex();
+    SetConfigDowndFilePath(m_sFilePathName);            //保存下载文件位置
     m_sWorkerDownloadThread->StartUpdateHardWare(m_sFilePathName, canid, updateType);
 }
 

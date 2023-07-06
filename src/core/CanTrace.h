@@ -41,23 +41,24 @@ class CanTrace : public QObject
     Q_OBJECT
 
 public:
-    explicit CanTrace(Backend &backend, QObject *parent, int flushInterval);
+    explicit CanTrace(Backend& backend, QObject* parent, int flushInterval);
 
     unsigned long size();
     void clear();
-    const CanMessage *getMessage(int idx);
-    void enqueueMessage(const CanMessage &msg, bool more_to_follow=false);
+    const CanMessage* getMessage(int idx);
+    void enqueueMessage(const CanMessage& msg, bool more_to_follow = false);
 
-    void saveCanDump(QFile &file);
-    void saveVectorAsc(QFile &file);
+    void saveCanDump(QFile& file);
+    void saveVectorAsc(QFile& file);
 
     bool getMuxedSignalFromCache(const CanDbSignal* signal, uint64_t* raw_value);
-	void InsertCanMessageTrace(const CanMessage& msg);
+    void InsertCanMessageTrace(const CanMessage& msg);
     bool SetUpgradeStatus(bool status)
     {
         return _isUpgradeStatue = status;
     }
-    void bindFun2(const std::function<int (int)>& fun2);
+    void bindFun2(const std::function<int (CanMessage)>& fun2);     //绑定函数
+    std::function<int (CanMessage)> m_fun2;                         //回调函数
 signals:
     void messageEnqueued(int idx);
     void beforeAppend(int num_messages);
@@ -69,11 +70,12 @@ private slots:
     void flushQueue();
 
 private:
-    enum {
+    enum
+    {
         pool_chunk_size = 1024
     };
 
-    Backend &_backend;
+    Backend& _backend;
 
     QVector<CanMessage> _data;
     int _dataRowsUsed;
@@ -81,13 +83,13 @@ private:
     bool _isTimerRunning;
     bool _isUpgradeStatue;
 
-    QMap<const CanDbSignal*,uint64_t> _muxCache;
+    QMap<const CanDbSignal*, uint64_t> _muxCache;
 
     QMutex _mutex;
     QMutex _timerMutex;
     QTimer _flushTimer;
 
     void startTimer();
-    std::function<int (int)> m_fun2;
+
 
 };

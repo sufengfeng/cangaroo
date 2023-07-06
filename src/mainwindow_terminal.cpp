@@ -18,8 +18,6 @@
 #include "qmywidget.h"
 #include "mainwindow_download.h"
 #include "workerdownloadthread.h"
-typedef void (*Fun_t)(bool checked);
-//void clicked(bool checked = false);
 //! [0]
 MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     QMainWindow(parent),
@@ -97,11 +95,11 @@ MainWindow_terminal::~MainWindow_terminal()
     delete m_sMainWindow_Download;
     delete m_settings;
     delete m_sDockRight;
-    delete m_sTraceDockLeft;
 
     m_sQListDevice.clear();
     m_sQListWidget->clear();    //清空
     delete m_sQListWidget;
+    m_sDockLeft->close();
     delete m_sDockLeft ;
     delete m_Qtimer_2s;
     delete m_ui;
@@ -204,7 +202,7 @@ void MainWindow_terminal::closeSerialPort()
 void MainWindow_terminal::about()
 {
     QMessageBox::about(this, tr("About GCAN-Term"),
-                       QString("Version: <b>V1.4</b><br>"
+                       QString("Version: <b>V1.5</b><br>"
                                "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus<br>"
                                "build time:[%1 %2]<br>").arg(__DATE__).arg(__TIME__)
                       );
@@ -219,11 +217,7 @@ void MainWindow_terminal::SendQByteArrayByCan(const QByteArray& data)
     CanMessage msg;
     uint32_t address = 0x170 + GetCanId();
     int sendIndex = 0;
-    int dlc = data.length();
-    if(dlc > 8)
-    {
-        dlc = 8;
-    }
+    int dlc = 8;
     while(sendIndex < data.length())
     {
         // Set payload data
@@ -231,6 +225,15 @@ void MainWindow_terminal::SendQByteArrayByCan(const QByteArray& data)
         {
             msg.setDataAt(i, data[sendIndex]);
             sendIndex++;
+        }
+        int vel = sendIndex % 8;
+        if(vel == 0)
+        {
+            dlc = 8;
+        }
+        else
+        {
+            dlc = vel;
         }
         msg.setId(address);
         msg.setLength(dlc);
@@ -250,12 +253,9 @@ void MainWindow_terminal::SendQByteArrayByCan(const QByteArray& data)
                 intf->sendMessage(msg);
                 backend().getTrace()->InsertCanMessageTrace(msg);
             }
-            catch(char* ch)
-            {
-                QMessageBox::warning(this, tr("warning"), QString(ch));
-            }
             catch(...)
             {
+                backend().stopMeasurement();    //关闭通道
                 QMessageBox::warning(this, tr("warning"), QString("The response times out. Please reinsert the device and try again!"));
             }
 
@@ -277,13 +277,22 @@ bool MainWindow_terminal::IsCanDevice(void)
 //! [6]
 void MainWindow_terminal::writeData(const QByteArray& data)
 {
-    static QByteArray tmpByteArray;
-
-    if(data.contains('\r'))
+    if(data.length() == 1 && data[0] == 0x08)       //backspace
+    {
+        if(tmpByteArray.length() >= 1)
+        {
+            tmpByteArray.resize(tmpByteArray.length() - 1);
+        }
+    }
+    else
     {
         tmpByteArray.append(data);
+    }
+    if(data.contains('\r'))
+    {
         if(tmpByteArray.length() > 1)
         {
+            tmpByteArray.resize(tmpByteArray.length() - 1);
             if(m_sLastCommandList.contains(QString(tmpByteArray)))  //包含则移到最后位置
             {
                 m_sLastCommandList.removeOne(QString(tmpByteArray));
@@ -293,9 +302,9 @@ void MainWindow_terminal::writeData(const QByteArray& data)
             {
                 m_sLastCommandList.removeFirst();
             }
-            m_ui->lineEdit->setText(QString(tmpByteArray));
+            m_ui->lineEdit->setText(m_sLastCommandList.last());
             m_nCurrentIndexCommandList = m_sLastCommandList.length() - 1;
-            if(QString(tmpByteArray).indexOf("upgrade") >= 0)
+            if(m_sLastCommandList.last().indexOf("upgrade") >= 0)
             {
                 //                qDebug() << __func__ << __LINE__;
                 Slot_StartDownLoad();   //开始升级
@@ -303,10 +312,6 @@ void MainWindow_terminal::writeData(const QByteArray& data)
         }
         m_console->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);   //将光标移动到文本末尾
         tmpByteArray.clear();
-    }
-    else
-    {
-        tmpByteArray.append(data);
     }
     if(IsCanDevice())
     {
@@ -330,13 +335,13 @@ Backend& MainWindow_terminal::backend()
 {
     return Backend::instance();
 }
-int  MainWindow_terminal::CallBackReveiveCanData(int idx)
+int  MainWindow_terminal::CallBackReveiveCanData(CanMessage message)
 {
-    //        SlotReveiveCanData(idx);
-    //    qDebug() << QString("Value[%1]").arg(idx);
-    //    CanTrace* p_sTrace = backend().getTrace();
-    //    const CanMessage* p_sCanMessage = p_sTrace->getMessage(idx);
-    //    m_sMainWindow_Download->HandleCanMessage(p_sCanMessage);
+    //    CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
+    //    CanInterface* intf = backend().getInterfaceById(canInterfaceIdList.at(0));
+    //    intf->sendMessage(message);
+    //    m_sMainWindow_Download->HandleCanMessage(&message);
+    //    qDebug() << QString("Value[%1]").arg(message.getId());
     return 0;
 }
 
@@ -375,24 +380,33 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
         }
         if(m_nFlagSaveLog)       //追加日志
         {
-            int dataLen = data.length() - 2;
-            for(int i = 0; i < dataLen;)
+            static int firstLine = 1;       //针对首次打开插入时间戳问题
+            if(firstLine)
             {
-                int index = data.indexOf('\n', i);
-                if(index >= 0) //行首增加时间
+                firstLine = 0;
+                data.insert(0, '\n');
+            }
+            if(data.length() >= 2)
+            {
+                int dataLen = data.length() - 1;
+                int index = 0;
+                for(int i = 0; i < dataLen;)
                 {
-                    QDateTime current_date_time = QDateTime::currentDateTime();
-                    QString current_date = current_date_time.toString("[yyyy.MM.dd-hh:mm:ss.zzz] ");
-                    data.insert(index + 1, current_date);
-                    data.remove(index, 1);      //去除回车 \n
-                    i += index + 1;
-                }
-                else
-                {
-                    break;
+                    index = data.indexOf('\n', i);
+                    if(index >= 0) //行首增加时间
+                    {
+                        QDateTime current_date_time = QDateTime::currentDateTime();
+                        QString current_date = current_date_time.toString("[yyyy.MM.dd-hh:mm:ss.zzz] ");
+                        data.insert(index + 1, current_date);
+                        data.remove(index, 1);      //去除回车 \n
+                        i += index + 1;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
-
             m_QStLogData.append(data);
         }
         data.clear();
@@ -401,7 +415,7 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
     {
         AddDeviceList(p_sCanMessage->getByte(0));
     }
-    m_sMainWindow_Download->HandleCanMessage(p_sCanMessage);
+    m_sMainWindow_Download->HandleCanMessage(p_sCanMessage);          //使用回调函数
 }
 //! [8]
 void MainWindow_terminal::handleError(QSerialPort::SerialPortError error)
@@ -433,10 +447,9 @@ void MainWindow_terminal::initActionsConnections()
 }
 void MainWindow_terminal::Slot_HandleTimeout(void)
 {
-    //    return;
     if(m_Qtimer_2s->isActive())
     {
-        if(m_nFlagSaveLog)
+        if(m_nFlagSaveLog && m_QStLogData.isEmpty() == false)
         {
             QFile file(m_QStrFileName);//内容保存到路径文件
             if(file.open(QIODevice::WriteOnly | QIODevice::Text))//以文本方式打开
@@ -465,13 +478,13 @@ void MainWindow_terminal::Slot_SaveLog(void)
         m_Qtimer_2s->stop();
         m_ui->actionSave->setToolTip("save log to ...");
         m_ui->actionSave->setIcon(QIcon(":/images/save.png"));
-        QMessageBox::warning(this, tr("Finish"), tr("Successfully save the file!"));
+        QMessageBox::warning(this, tr("Finish"), tr("Successfully save log <br>%1!").arg(m_QStrFileName));
     }
     else                    //打开日志记录
     {
         QFileDialog dlg(this);
         //获取内容的保存路径
-        m_QStrFileName = dlg.getSaveFileName(this, tr("Save As"), "./", tr("Text File(*.txt)"));
+        m_QStrFileName = dlg.getSaveFileName(this, tr("Save As"), "./", tr("Text File(*.log)"));
         if(m_QStrFileName == "")        //未选中
         {
             return;
@@ -482,6 +495,7 @@ void MainWindow_terminal::Slot_SaveLog(void)
         m_ui->actionSave->setIcon(QIcon(":/images/saved.png"));
     }
 }
+
 void MainWindow_terminal::Slot_StartDownLoad(void)
 {
     CanInterfaceIdList canInterfaceIdList = backend().getInterfaceList();
@@ -619,13 +633,9 @@ void MainWindow_terminal::Slot_CallAllCanDevices(void)
             intf->sendMessage(msg);
             backend().getTrace()->InsertCanMessageTrace(msg);
         }
-
-        catch(char* ch)
-        {
-            QMessageBox::warning(this, tr("warning"), QString(ch));
-        }
         catch(...)
         {
+            backend().stopMeasurement();    //关闭通道
             QMessageBox::warning(this, tr("warning"), QString("The response times out. Please reinsert the device and try again!"));
         }
 
@@ -646,12 +656,6 @@ void MainWindow_terminal::keyPressEvent(QKeyEvent* e)
     {
         case Qt::Key_Return:
             writeData(m_ui->lineEdit->text().toLatin1().append('\r'));
-            m_sLastCommandList.append(m_ui->lineEdit->text());
-            if(m_sLastCommandList.length() > 10)
-            {
-                m_sLastCommandList.removeFirst();
-            }
-            m_ui->lineEdit->clear();
             break;
         case Qt::Key_Up:
             if(m_sLastCommandList.isEmpty() == false)
@@ -662,9 +666,7 @@ void MainWindow_terminal::keyPressEvent(QKeyEvent* e)
                     m_nCurrentIndexCommandList = 0;
                 }
                 QString strTmp = m_sLastCommandList.at(m_nCurrentIndexCommandList);
-                QByteArray arrayTmp = strTmp.toLatin1();
-
-                m_ui->lineEdit->setText(QString(arrayTmp.left(arrayTmp.length() - 1)));
+                m_ui->lineEdit->setText(strTmp);
             }
             break;
         case Qt::Key_Down:
@@ -676,9 +678,7 @@ void MainWindow_terminal::keyPressEvent(QKeyEvent* e)
                     m_nCurrentIndexCommandList = m_sLastCommandList.length() - 1;
                 }
                 QString strTmp = m_sLastCommandList.at(m_nCurrentIndexCommandList);
-                QByteArray arrayTmp = strTmp.toLatin1();
-
-                m_ui->lineEdit->setText(QString(arrayTmp.left(arrayTmp.length() - 1)));
+                m_ui->lineEdit->setText(strTmp);
             }
             break;
         default:

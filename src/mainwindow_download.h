@@ -10,6 +10,9 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QDebug>
+#include <QStandardPaths>
+#include <QSettings>
+#include <QDir>
 #include <core/Backend.h>
 namespace Ui
 {

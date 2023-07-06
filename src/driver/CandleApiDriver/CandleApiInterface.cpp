@@ -345,7 +345,6 @@ void CandleApiInterface::sendMessage(const CanMessage &msg)
     }
     catch(...)
     {
-        close();//关闭通道
         throw(string("SendCanFramTimeout"));
     }
 }
