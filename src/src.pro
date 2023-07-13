@@ -70,4 +70,5 @@ include($$PWD/driver/SLCANDriver/SLCANDriver.pri)
 win32:include($$PWD/driver/CandleApiDriver/CandleApiDriver.pri)
 
 DISTFILES += \
+    ../build_EXE.bat \
     buildversion/version.txt

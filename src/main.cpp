@@ -51,6 +51,7 @@ int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
     a.setApplicationVersion(BUTIANYUN_VERSION);
+    a.setApplicationName("cangaroo");
     MainWindow w;
     //    w.show();
     w.ShowTerminal();
