@@ -1,4 +1,4 @@
-
+﻿
 /****************************************************************************
 **
 ** Copyright (C) 2012 Denis Shienkov <denis.shienkov@gmail.com>
@@ -75,7 +75,7 @@ class Console;
 class SettingsDialog;
 class MainWindow_Download;
 class TraceWindow;
-
+class QSimpleUpdater;
 class MainWindow_terminal : public QMainWindow
 {
     Q_OBJECT
@@ -92,6 +92,9 @@ public slots:
     void Slot_StartDownLoad(void);
     void Slot_SaveLog(void);
     void Slot_HandleTimeout(void);
+    void Slot_checkForUpdates(void);
+    void Slot_updateChangelog(const QString &url);
+    void Slot_displayAppcast(const QString &url, const QByteArray &reply);
 signals:
     void EmitSignalShowCangaroo(void);
     void EmitSignalCloseCanDevice(void);
@@ -142,6 +145,8 @@ private:
     QString m_QStrFileName;
     QString m_QStLogData;
     QByteArray tmpByteArray;
+    QSimpleUpdater* m_updater;
+    QListView *n_sListVeiw;      //显示版本号
 };
 
 #endif // MAINWINDOW_H

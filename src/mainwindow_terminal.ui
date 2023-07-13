@@ -46,7 +46,7 @@
      <x>0</x>
      <y>0</y>
      <width>843</width>
-     <height>26</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuCalls">
@@ -75,6 +75,7 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionCheckUpdates"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuCalls"/>
@@ -232,6 +233,11 @@
    </property>
    <property name="toolTip">
     <string>save log to ...</string>
+   </property>
+  </action>
+  <action name="actionCheckUpdates">
+   <property name="text">
+    <string>Check for updates</string>
    </property>
   </action>
  </widget>

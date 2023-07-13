@@ -1,4 +1,4 @@
-#include "workerdownloadthread.h"
+﻿#include "workerdownloadthread.h"
 #include <QDebug>
 #include <core/MeasurementSetup.h>
 #include <core/CanTrace.h>
@@ -48,7 +48,7 @@ void WorkerDownloadThread::run()
     {
         while(!m_stopFlag)
         {
-            QTime time;
+            QElapsedTimer   time;
             time.start();
             UpdateSubBoardMain();
             emit Signal_progress(m_nProceValue, QString(tr("update total time:[%1]s")).arg(time.elapsed() / 1000.0));
@@ -217,7 +217,7 @@ void WorkerDownloadThread::SubBoardUpdate(void)
     //    int send_header_cnt = 0;
     int flag_MUPDATE_NULL = 1;
     int flag_MUPDATE_SEND_HEADER = 1;
-    QTime time;
+    QElapsedTimer   time;
     time.start();
     uint32_t tmpResponseIndex ;
     //    uint8_t counter = 0;

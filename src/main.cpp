@@ -1,4 +1,4 @@
-/*
+﻿/*
 
   Copyright (c) 2015, 2016 Hubert Denkmair <hubert@denkmair.de>
 
@@ -22,7 +22,7 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include <QtDebug>
-#include "windows.h"
+#include "buildversion/version.h"
 #define MAX_PROGRESS 100
 #define PROGRESS_BAR_LENGTH 50
 
@@ -50,6 +50,7 @@ void print_percentage(int percentage)
 int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
+    a.setApplicationVersion(BUTIANYUN_VERSION);
     MainWindow w;
     //    w.show();
     w.ShowTerminal();

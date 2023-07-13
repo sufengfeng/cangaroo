@@ -1,4 +1,4 @@
-/*
+﻿/*
 
   Copyright (c) 2015, 2016 Hubert Denkmair <hubert@denkmair.de>
 
@@ -145,7 +145,7 @@ void Backend::loadDefaultSetup(MeasurementSetup& setup)
         foreach(CanInterfaceId intf, driver->getInterfaceIds())
         {
             MeasurementNetwork* network = setup.createNetwork();
-            network->setName(QString().sprintf("Network %d", i++));
+            network->setName(QString().asprintf("Network %d", i++));
 
             MeasurementInterface* mi = new MeasurementInterface();
             mi->setCanInterface(intf);

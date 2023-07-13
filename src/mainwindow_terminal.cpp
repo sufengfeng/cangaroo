@@ -1,4 +1,4 @@
-#include "mainwindow_terminal.h"
+﻿#include "mainwindow_terminal.h"
 #include "ui_mainwindow_terminal.h"
 
 #include "console.h"
@@ -17,7 +17,9 @@
 #include <driver/CanInterface.h>
 #include "qmywidget.h"
 #include "mainwindow_download.h"
-#include "workerdownloadthread.h"
+#include "QSimpleUpdater.h"
+#include "buildversion/version.h"
+static const QString DEFS_URL = "https://gitee.com/sufengfeng/gcan-term-update/raw/master/definitions/updates.json";
 //! [0]
 MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     QMainWindow(parent),
@@ -31,6 +33,7 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 {
     //! [0]
     m_ui->setupUi(this);
+    n_sListVeiw=nullptr;
     m_console = m_ui->widget;
     m_console->setEnabled(false);
     m_Qtimer_2s = new QTimer(this);     //2s计数器
@@ -86,8 +89,15 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     //! [3]
     QIcon icon(":/assets/cangaroo.png");
     setWindowIcon(icon);
+
+    m_updater = QSimpleUpdater::getInstance();
+    connect(m_ui->actionCheckUpdates, &QAction::triggered, this, &MainWindow_terminal::Slot_checkForUpdates);
+
+    /* Check for updates when the "Check For Updates" button is clicked */
+    connect(m_updater, &QSimpleUpdater::checkingFinished, this, &MainWindow_terminal::Slot_updateChangelog);
+    connect(m_updater, &QSimpleUpdater::appcastDownloaded, this, &MainWindow_terminal::Slot_displayAppcast);
+    Slot_checkForUpdates();//启动检测一下版本
 }
-//! [3]
 
 MainWindow_terminal::~MainWindow_terminal()
 {
@@ -95,7 +105,9 @@ MainWindow_terminal::~MainWindow_terminal()
     delete m_sMainWindow_Download;
     delete m_settings;
     delete m_sDockRight;
-
+    if(n_sListVeiw){
+        delete n_sListVeiw;
+    }
     m_sQListDevice.clear();
     m_sQListWidget->clear();    //清空
     delete m_sQListWidget;
@@ -104,6 +116,7 @@ MainWindow_terminal::~MainWindow_terminal()
     delete m_Qtimer_2s;
     delete m_ui;
 }
+
 void MainWindow_terminal::CanConnectStatusChanged(int status)
 {
     const SettingsDialog::Settings p = m_settings->settings();
@@ -184,6 +197,18 @@ void MainWindow_terminal::CloseDevice()
         closeSerialPort();
     }
 }
+//#include <QList>
+QList<QString> g_lVersionList={
+"V1.0.0 将termial窗口加入到cangaroo中",
+"V1.1.0 发布基本命令版本,can读写已调通",
+"V1.2.0 增加浮动窗口，增加can设备OTA功能",
+"V1.3.0 优化升级功能",
+"V1.4.0 增加日志保存功能、适配42M频率Can设备、增加时间戳",
+"V1.5.0 修复backspace和delete的问题，增加发送can消息超时功能，避免界面卡死",
+"V1.6.0 增加自动远程升级功能",
+"V1.7.0 待发布",
+};
+
 //! [5]
 void MainWindow_terminal::closeSerialPort()
 {
@@ -201,11 +226,30 @@ void MainWindow_terminal::closeSerialPort()
 
 void MainWindow_terminal::about()
 {
-    QMessageBox::about(this, tr("About GCAN-Term"),
-                       QString("Version: <b>V1.5</b><br>"
-                               "The <b>GCAN-Term</b> is used for can device debugging, factory testing, and firmware download for Geekplus<br>"
-                               "build time:[%1 %2]<br>").arg(__DATE__).arg(__TIME__)
+    int btnStatus = QMessageBox::information(this, tr("About GCAN-Term"),
+                       QString("Version: <b>V%1</b><br>"
+                               "The <b>GCAN-Term</b> is used for can device debugging, Factory testing, and firmware download for Geekplus<br>"
+                               "build time:[%2 %3]<br>").arg(BUTIANYUN_VERSION).arg(__DATE__).arg(__TIME__),
+                                             tr("版本历史详情" ),tr("OK" )
+
                       );
+    if(0 == btnStatus)//点击了按钮1（按钮索引位置为0，后面的依次增加）
+    {
+        if(n_sListVeiw==nullptr){
+            n_sListVeiw=new QListView();
+            n_sListVeiw->setWindowTitle(tr("版本历史详情"));
+            QStandardItemModel *ItemModel = new QStandardItemModel(n_sListVeiw);
+            foreach (QString qVersion, g_lVersionList) {
+                QStandardItem *item = new QStandardItem(qVersion);
+                ItemModel->appendRow(item);
+                item->setEnabled(false);
+            }
+            n_sListVeiw->setModel(ItemModel);
+            n_sListVeiw->setWindowModality(Qt::ApplicationModal);
+            n_sListVeiw->resize(500,300);
+        }
+        n_sListVeiw->show();
+    }
 
 }
 int MainWindow_terminal::GetCanId(void)
@@ -455,7 +499,7 @@ void MainWindow_terminal::Slot_HandleTimeout(void)
             if(file.open(QIODevice::WriteOnly | QIODevice::Text))//以文本方式打开
             {
                 QTextStream out(&file); //IO设备对象的地址对其进行初始化
-                out << m_QStLogData << endl   ; //输出
+                out << m_QStLogData << Qt::endl   ; //输出
                 //                QMessageBox::warning(this, tr("Finish"), tr("Successfully save the file!"));
                 file.close();
             }
@@ -684,5 +728,85 @@ void MainWindow_terminal::keyPressEvent(QKeyEvent* e)
         default:
             ;
     }
+}
 
+// Window::checkForUpdates
+void MainWindow_terminal::Slot_checkForUpdates(void)
+{
+    /* Get settings from the UI */
+    QString version = BUTIANYUN_VERSION;
+    //    bool customAppcast =false;
+    //    bool downloaderEnabled = true;
+    //    bool notifyOnFinish = false;
+    //    bool notifyOnUpdate = false;
+    //    bool mandatoryUpdate = false;
+
+    /* Apply the settings */
+        m_updater->setModuleVersion(DEFS_URL, version);
+    //    m_updater->setNotifyOnFinish(DEFS_URL, notifyOnFinish);
+    //    m_updater->setNotifyOnUpdate(DEFS_URL, notifyOnUpdate);
+    //    m_updater->setUseCustomAppcast(DEFS_URL, customAppcast);
+    //    m_updater->setDownloaderEnabled(DEFS_URL, downloaderEnabled);
+    //    m_updater->setMandatoryUpdate(DEFS_URL, mandatoryUpdate);
+
+    /* Check for updates */
+    m_updater->checkForUpdates(DEFS_URL);
+}
+/**
+ * Compares the two version strings (\a x and \a y).
+ *     - If \a x is greater than \y, this function returns \c true.
+ *     - If \a y is greater than \x, this function returns \c false.
+ *     - If both versions are the same, this function returns \c false.
+ */
+static bool compare(const QString &x, const QString &y)
+{
+    QStringList versionsX = x.split(".");
+    QStringList versionsY = y.split(".");
+
+    int count = qMin(versionsX.count(), versionsY.count());
+
+    for (int i = 0; i < count; ++i)
+    {
+            int a = QString(versionsX.at(i)).toInt();
+            int b = QString(versionsY.at(i)).toInt();
+
+            if (a > b)
+                return true;
+
+            else if (b > a)
+                return false;
+    }
+
+    return versionsY.count() < versionsX.count();
+}
+// Window::updateChangelog
+void MainWindow_terminal::Slot_updateChangelog(const QString &url)
+{
+    if (url == DEFS_URL){
+            QString latestVersion=m_updater->getLatestVersion(DEFS_URL);
+            QString    ModuleVersion=m_updater->getModuleVersion(DEFS_URL);
+            if(compare(latestVersion,ModuleVersion)){
+//               QMessageBox::information(this, tr("Congratulations"), "There are a versions available");
+            }else{
+                QMessageBox::information(this, tr("Congratulations"), "Now you have the latest version!!!");
+            }
+            qDebug()<<__func__<<__LINE__<<(m_updater->getChangelog(url))<<latestVersion<<  ModuleVersion ;
+//            this->close();
+//            qApp->quit();
+    }
+}
+// Window::displayAppcast
+void MainWindow_terminal::Slot_displayAppcast(const QString &url, const QByteArray &reply)
+{
+    if (url == DEFS_URL)
+    {
+            QString text = "This is the downloaded appcast: <p><pre>" + QString::fromUtf8(reply)
+                           + "</pre></p><p> If you need to store more information on the "
+                             "appcast (or use another format), just use the "
+                             "<b>QSimpleUpdater::setCustomAppcast()</b> function. "
+                             "It allows your application to interpret the appcast "
+                             "using your code and not QSU's code.</p>";
+
+            qDebug()<<__func__<<__LINE__<<(text);
+    }
 }

@@ -1,4 +1,4 @@
-#include "mainwindow_download.h"
+﻿#include "mainwindow_download.h"
 #include "ui_mainwindow_download.h"
 #include "workerdownloadthread.h"
 bool isDirExist(QString fullPath)
@@ -79,7 +79,8 @@ MainWindow_Download::~MainWindow_Download()
 void MainWindow_Download::closeEvent(QCloseEvent* event)
 {
     m_sWorkerDownloadThread->StopDownload();
-    event->accept();
+    qDebug()<<__func__<<__LINE__;
+//    event->accept();
 }
 bool MainWindow_Download::Slot_UpdateProcess(const int counter, QString str)
 {

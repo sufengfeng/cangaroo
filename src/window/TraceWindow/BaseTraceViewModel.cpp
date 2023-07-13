@@ -1,4 +1,4 @@
-/*
+﻿/*
 
   Copyright (c) 2015, 2016 Hubert Denkmair <hubert@denkmair.de>
 
@@ -116,7 +116,7 @@ QVariant BaseTraceViewModel::formatTimestamp(timestamp_mode_t mode, const CanMes
         if (t_last==0) {
             return QVariant();
         } else {
-            return QString().sprintf("%.04lf", t_current-t_last);
+            return QString().asprintf("%.04lf", t_current-t_last);
         }
 
     } else if (mode==timestamp_mode_absolute) {
@@ -126,7 +126,7 @@ QVariant BaseTraceViewModel::formatTimestamp(timestamp_mode_t mode, const CanMes
     } else if (mode==timestamp_mode_relative) {
 
         double t_current = currentMsg.getFloatTimestamp();
-        return QString().sprintf("%.04lf", t_current - backend()->getTimestampAtMeasurementStart());
+        return QString().asprintf("%.04lf", t_current - backend()->getTimestampAtMeasurementStart());
 
     }
 

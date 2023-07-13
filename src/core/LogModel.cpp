@@ -1,4 +1,4 @@
-/*
+﻿/*
 
   Copyright (c) 2016 Hubert Denkmair <hubert@denkmair.de>
 

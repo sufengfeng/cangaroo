@@ -5,6 +5,7 @@ QT += widgets
 QT += xml
 QT += charts
 QT += serialport
+QT += network
 
 TARGET = cangaroo
 TEMPLATE = app
@@ -55,6 +56,8 @@ include($$PWD/window/LogWindow/LogWindow.pri)
 include($$PWD/window/GraphWindow/GraphWindow.pri)
 include($$PWD/window/CanStatusWindow/CanStatusWindow.pri)
 include($$PWD/window/RawTxWindow/RawTxWindow.pri)
+include($$PWD/buildversion/version.pri)
+include($$PWD/QSimpleUpdater/QSimpleUpdater.pri)
 
 
 unix:PKGCONFIG += libnl-3.0
@@ -65,3 +68,6 @@ include($$PWD/driver/CANBlastDriver/CANBlastDriver.pri)
 include($$PWD/driver/SLCANDriver/SLCANDriver.pri)
 
 win32:include($$PWD/driver/CandleApiDriver/CandleApiDriver.pri)
+
+DISTFILES += \
+    buildversion/version.txt
