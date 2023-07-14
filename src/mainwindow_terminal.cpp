@@ -19,6 +19,8 @@
 #include "mainwindow_download.h"
 #include "QSimpleUpdater.h"
 #include "buildversion/version.h"
+#include <iostream>
+Q_LOGGING_CATEGORY(logTest, "test")
 static const QString DEFS_URL = "https://gitee.com/sufengfeng/gcan-term-update/raw/master/definitions/updates.json";
 //! [0]
 MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
@@ -97,8 +99,9 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     connect(m_updater, &QSimpleUpdater::checkingFinished, this, &MainWindow_terminal::Slot_updateChangelog);
     connect(m_updater, &QSimpleUpdater::appcastDownloaded, this, &MainWindow_terminal::Slot_displayAppcast);
     Slot_checkForUpdates();//启动检测一下版本
+//    qDebug()<<__func__<<__LINE__;
+//    qCDebug(logTest) << QString("debug message");
 }
-
 MainWindow_terminal::~MainWindow_terminal()
 {
     backend().stopMeasurement();
@@ -199,14 +202,15 @@ void MainWindow_terminal::CloseDevice()
 }
 //#include <QList>
 QList<QString> g_lVersionList={
-"V1.0.0 将termial窗口加入到cangaroo中",
-"V1.1.0 发布基本命令版本,can读写已调通",
-"V1.2.0 增加浮动窗口，增加can设备OTA功能",
-"V1.3.0 优化升级功能",
-"V1.4.0 增加日志保存功能、适配42M频率Can设备、增加时间戳",
-"V1.5.0 修复backspace和delete的问题，增加发送can消息超时功能，避免界面卡死",
-"V1.6.0 增加自动远程升级功能",
-"V1.7.0 待发布",
+    "V1.0.0 将termial窗口加入到cangaroo中",
+    "V1.1.0 发布基本命令版本,can读写已调通",
+    "V1.2.0 增加浮动窗口，增加can设备OTA功能",
+    "V1.3.0 优化升级功能",
+    "V1.4.0 增加日志保存功能、适配42M频率Can设备、增加时间戳",
+    "V1.5.0 修复backspace和delete的问题，增加发送can消息超时功能，避免界面卡死",
+    "V1.6.1 增加自动远程升级功能",
+    "V1.7.2 增加程序时开启terminal和日志记录功能",
+    "V1.8.0 待发布",
 };
 
 //! [5]

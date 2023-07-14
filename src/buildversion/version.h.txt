@@ -1,4 +1,1 @@
-#ifndef BUTIANYUN_VERSION_H
-#define BUTIANYUN_VERSION_H
 #define BUTIANYUN_VERSION "butianyun_version_number"
-#endif // BUTIANYUN_VERSION_H

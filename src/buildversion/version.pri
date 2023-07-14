@@ -10,14 +10,14 @@ DISTFILES += \
 #版本号格式类似：1.0.0.1
 #返回值为升级后的版本号
 defineReplace(butianyun_update_version) {
-    OLD_VERSION = $$cat($$PWD/version.txt, lines)
+    OLD_VERSION = $$cat($$PWD/buildversion/version.txt, lines)
     VERSION_NUMBERS = $$split(OLD_VERSION, .)
 #    VA = $$take_first(VERSION_NUMBERS)
     VA = 0
     VB = $$take_first(VERSION_NUMBERS)
     VC = $$take_first(VERSION_NUMBERS)
     VD = $$take_first(VERSION_NUMBERS)
-
+    VA=1
     #如果没有读取到合适的版本号则自动初始化
     #初始版本号为1.0.0.1
     lessThan(VA, 1) {
@@ -36,7 +36,6 @@ defineReplace(butianyun_update_version) {
       VD = 1
       VOS += VD
     }
-
     #如果配置的版本号有效则升级版本号
     isEmpty(VOS) {
         VM = 1000
@@ -63,20 +62,25 @@ defineReplace(butianyun_update_version) {
     S = .
     NEW_VERSION =$$VB$$S$$VC$$S$$VD
     message($$OLD_VERSION => $$NEW_VERSION)
-
     #将升级后的版本号写入到文件中
-    BUTIANYUN_VERSION_H_TXT = $$cat($$PWD/version.h.txt, blob)
-#    message($$BUTIANYUN_VERSION_H_TXT)
+    BUTIANYUN_VERSION_H_TXT = $$cat($$PWD/buildversion/version.h.txt, lines)
     BUTIANYUN_VERSION_H = $$replace(BUTIANYUN_VERSION_H_TXT, butianyun_version_number, $$NEW_VERSION)
-#    message($$BUTIANYUN_VERSION_H)
-#    message($$NEW_VERSION)
-    write_file($$PWD/version.h, BUTIANYUN_VERSION_H)
-    write_file($$PWD/version.txt, NEW_VERSION)
+    message($$BUTIANYUN_VERSION_H)
+    message($$NEW_VERSION)
+    FILE_PATH=$$PWD/buildversion/version.h
+#    write_file(FILE_PATH, BUTIANYUN_VERSION_H)
+    !system(echo $$BUTIANYUN_VERSION_H > $$FILE_PATH) {
+      warning(Cant create a file)
+    }
+    FILE_PATH=$$PWD/buildversion/version.txt
+#    write_file(FILE_PATH, NEW_VERSION)
+    !system(echo $$NEW_VERSION > $$FILE_PATH) {
+      warning(Cant create a file)
+    }
     return ($$VERSION)
 }
-#调用版本号自动升级函数
-!build_pass {
-  VERSION = $$butianyun_update_version()
-}
+
 HEADERS += \
     $$PWD/version.h
+    #调用版本号自动升级函数
+

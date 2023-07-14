@@ -1,7 +1,7 @@
 ﻿#include "mainwindow_download.h"
 #include "ui_mainwindow_download.h"
 #include "workerdownloadthread.h"
-bool isDirExist(QString fullPath)
+static bool isDirExist(QString fullPath)
 {
     QDir dir(fullPath);
     if(dir.exists())
