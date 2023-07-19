@@ -107,6 +107,7 @@ private slots:
     void about();
     void writeData(const QByteArray& data);
     void readData();
+    void FluenceLogToFile(void);
     void SendQByteArrayByCan(const QByteArray& data);
     int SetCanInterfaceId(int interfaceId);
     void handleError(QSerialPort::SerialPortError error);
@@ -147,6 +148,7 @@ private:
     QByteArray tmpByteArray;
     QSimpleUpdater* m_updater;
     QListView *n_sListVeiw;      //显示版本号
+    long m_nLastLogReceiveTime;     //最近一次接收到日志时间
 };
 
 #endif // MAINWINDOW_H

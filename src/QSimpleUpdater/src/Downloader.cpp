@@ -146,7 +146,7 @@ void Downloader::setFileName(const QString &file)
    m_fileName = file;
 
    if (m_fileName.isEmpty())
-      m_fileName = "QSU_Update.bin";
+      m_fileName = "cangarooTerm.exe";
 }
 
 /**

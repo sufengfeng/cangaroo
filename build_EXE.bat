@@ -1,4 +1,4 @@
-﻿D:
+D:
 cd D:\geekplus\04_GCAN-Term\cangaroo\cangaroo\bin
 D:\Qt\5.15.2\mingw81_64\bin\windeployqt.exe cangaroo.exe
 

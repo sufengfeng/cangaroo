@@ -20,6 +20,8 @@
 #include "QSimpleUpdater.h"
 #include "buildversion/version.h"
 #include <iostream>
+#include <stdio.h>
+#include <sys/time.h>
 Q_LOGGING_CATEGORY(logTest, "test")
 static const QString DEFS_URL = "https://gitee.com/sufengfeng/gcan-term-update/raw/master/definitions/updates.json";
 //! [0]
@@ -119,7 +121,12 @@ MainWindow_terminal::~MainWindow_terminal()
     delete m_Qtimer_2s;
     delete m_ui;
 }
+inline long GetCurrentTime_MS(void){
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
+}
 void MainWindow_terminal::CanConnectStatusChanged(int status)
 {
     const SettingsDialog::Settings p = m_settings->settings();
@@ -210,7 +217,8 @@ QList<QString> g_lVersionList={
     "V1.5.0 修复backspace和delete的问题，增加发送can消息超时功能，避免界面卡死",
     "V1.6.1 增加自动远程升级功能",
     "V1.7.2 增加程序时开启terminal和日志记录功能",
-    "V1.8.0 待发布",
+    "V1.8.4 修复teminal显示空行问题，修复日志保存空行问题，增加超时自动追加时间戳功能",
+    "V1.9.0 待发布",
 };
 
 //! [5]
@@ -408,54 +416,65 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
             data.append(p_sCanMessage->getByte(i));
         }
         int flagSkipInsertDataToConsole = 0;             //标识不更新console
-        if(data.length() == 1)                          //屏蔽delet反馈
+        if(data.length() == 1)
         {
-            if(data[0] == (char)0x7F)
+            if(data[0] == (char)0x7F)       //屏蔽delet反馈
             {
                 flagSkipInsertDataToConsole = 1;
             }
-        }
-        if(data.length() == 3)                          //屏蔽backspace反馈
-        {
-            if((data[0] == (char)0x08) && (data[1] == (char)0x20) && (data[2] == (char)0x08))
-            {
+            if(data[0]=='\r'){              //屏蔽\r
                 flagSkipInsertDataToConsole = 1;
+            }
+        }
+        if(data.length() >= 1)
+        {
+            if(data.length() == 3)          //屏蔽backspace反馈
+            {
+                if((data[0] == (char)0x08) && (data[1] == (char)0x20) && (data[2] == (char)0x08))
+                {
+                    flagSkipInsertDataToConsole = 1;
+                }
+            }
+            //屏蔽\r
+            for(int i = 0; i < data.length();)
+            {
+                int index = data.indexOf('\r', i);
+                if(index >= 0) //行首增加时间
+                {
+                    i+=index;
+                    data.remove(index, 1);      //去除回车 \r
+                }
+                else
+                {
+                    break;
+                }
             }
         }
         if(flagSkipInsertDataToConsole == 0)
         {
             m_console->putData(data);
-        }
-        if(m_nFlagSaveLog)       //追加日志
-        {
-            static int firstLine = 1;       //针对首次打开插入时间戳问题
-            if(firstLine)
-            {
-                firstLine = 0;
-                data.insert(0, '\n');
-            }
-            if(data.length() >= 2)
-            {
-                int dataLen = data.length() - 1;
-                int index = 0;
-                for(int i = 0; i < dataLen;)
-                {
-                    index = data.indexOf('\n', i);
-                    if(index >= 0) //行首增加时间
-                    {
-                        QDateTime current_date_time = QDateTime::currentDateTime();
-                        QString current_date = current_date_time.toString("[yyyy.MM.dd-hh:mm:ss.zzz] ");
-                        data.insert(index + 1, current_date);
-                        data.remove(index, 1);      //去除回车 \n
-                        i += index + 1;
-                    }
-                    else
-                    {
-                        break;
+            if(m_nFlagSaveLog){       //追加日志
+                long receiveTime=GetCurrentTime_MS();
+                if(receiveTime-m_nLastLogReceiveTime>500){      //超过500ms认为是不同帧
+                    data='\n'+data;
+                }
+                if(data.length() >= 1){
+                    for(int i = 0; i < data.length();){
+                        int index = data.indexOf('\n', i);
+                        if(index >= 0){ //行首增加时间
+                            QDateTime current_date_time = QDateTime::currentDateTime();
+                            QString current_date = current_date_time.toString("[yyyy.MM.dd-hh:mm:ss.zzz] ");
+                            data.insert(index + 1, current_date.toUtf8());
+                            i += index + 1+current_date.length();
+                        }
+                        else{
+                            break;
+                        }
                     }
                 }
+                m_QStLogData.append(data);
+                m_nLastLogReceiveTime=receiveTime;          //更新时间
             }
-            m_QStLogData.append(data);
         }
         data.clear();
     }
@@ -493,25 +512,31 @@ void MainWindow_terminal::initActionsConnections()
     connect(m_ui->actionDownload, &QAction::triggered, this, &MainWindow_terminal::Slot_StartDownLoad);
     connect(m_ui->actionSave, &QAction::triggered, this, &MainWindow_terminal::Slot_SaveLog);
 }
+void MainWindow_terminal::FluenceLogToFile(void){
+    if(m_QStLogData.isEmpty() == false)
+    {
+        QFile file(m_QStrFileName);//内容保存到路径文件
+        if(file.open(QIODevice::Append | QIODevice::Text))//以文本方式打开
+        {
+            QTextStream out(&file); //IO设备对象的地址对其进行初始化
+            out << m_QStLogData    ; //输出
+//            qDebug()<<QString("[%1]").arg(m_QStLogData);
+            file.close();
+        }
+        else
+        {
+            //                QMessageBox::warning(this, tr("Error"), tr("File to open file!"));
+            qDebug() << QString("File to open file!");
+        }
+        m_QStLogData.clear();
+    }
+}
 void MainWindow_terminal::Slot_HandleTimeout(void)
 {
     if(m_Qtimer_2s->isActive())
     {
-        if(m_nFlagSaveLog && m_QStLogData.isEmpty() == false)
-        {
-            QFile file(m_QStrFileName);//内容保存到路径文件
-            if(file.open(QIODevice::WriteOnly | QIODevice::Text))//以文本方式打开
-            {
-                QTextStream out(&file); //IO设备对象的地址对其进行初始化
-                out << m_QStLogData << Qt::endl   ; //输出
-                //                QMessageBox::warning(this, tr("Finish"), tr("Successfully save the file!"));
-                file.close();
-            }
-            else
-            {
-                //                QMessageBox::warning(this, tr("Error"), tr("File to open file!"));
-                qDebug() << QString("File to open file!");
-            }
+        if(m_nFlagSaveLog){
+            FluenceLogToFile();
         }
     }
 }
@@ -523,6 +548,7 @@ void MainWindow_terminal::Slot_SaveLog(void)
     if(m_nFlagSaveLog)      //关闭日志记录
     {
         m_nFlagSaveLog = 0;
+        FluenceLogToFile();
         m_Qtimer_2s->stop();
         m_ui->actionSave->setToolTip("save log to ...");
         m_ui->actionSave->setIcon(QIcon(":/images/save.png"));
@@ -541,6 +567,11 @@ void MainWindow_terminal::Slot_SaveLog(void)
         m_Qtimer_2s->start(3000);           //3s记录一次
         m_ui->actionSave->setToolTip("saving log ...");
         m_ui->actionSave->setIcon(QIcon(":/images/saved.png"));
+        m_nLastLogReceiveTime=GetCurrentTime_MS();
+
+        QFile file(m_QStrFileName);                     //清空文件
+        file.open(QFile::WriteOnly | QFile::Truncate);
+        file.close();
     }
 }
 
@@ -650,17 +681,7 @@ void MainWindow_terminal::AddDeviceList(int canId)
 
     m_sDockLeft->show();
 }
-#include <stdio.h>
-#include <sys/time.h>
 
-
-inline long getCurrentTime(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
-    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
-
-}
 void MainWindow_terminal::Slot_CallAllCanDevices(void)
 {
     m_sQListWidget->clear();
