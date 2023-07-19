@@ -42,7 +42,7 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     m_console->setEnabled(false);
     m_Qtimer_2s = new QTimer(this);     //2s计数器
     connect(m_Qtimer_2s, SIGNAL(timeout()), this, SLOT(Slot_HandleTimeout()));
-    setWindowIcon(QIcon(":/assets/cagaroo.png"));
+//    setWindowIcon(QIcon(":/assets/cagaroo.png"));
 
     //浮动窗口
     m_sDockRight = new QDockWidget(this);
@@ -218,7 +218,8 @@ QList<QString> g_lVersionList={
     "V1.6.1 增加自动远程升级功能",
     "V1.7.2 增加程序时开启terminal和日志记录功能",
     "V1.8.4 修复teminal显示空行问题，修复日志保存空行问题，增加超时自动追加时间戳功能",
-    "V1.9.0 待发布",
+    "V1.9.4 修改启动版本自检屏蔽提示，修改图标",
+    "V1.10.0 待发布",
 };
 
 //! [5]
@@ -813,6 +814,11 @@ void MainWindow_terminal::Slot_updateChangelog(const QString &url)
             if(compare(latestVersion,ModuleVersion)){
 //               QMessageBox::information(this, tr("Congratulations"), "There are a versions available");
             }else{
+                static bool skipFirst=true;         //开机第一次检测跳过
+                if(skipFirst){
+                    skipFirst=false;
+                    return ;
+                }
                 QMessageBox::information(this, tr("Congratulations"), "Now you have the latest version!!!");
             }
             qDebug()<<__func__<<__LINE__<<(m_updater->getChangelog(url))<<latestVersion<<  ModuleVersion ;

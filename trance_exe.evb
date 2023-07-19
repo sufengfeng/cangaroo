@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="windows-1252"?>
 <>
   <InputFile>D:\geekplus\04_GCAN-Term\cangaroo\cangaroo\bin\cangaroo.exe</InputFile>
-  <OutputFile>D:\geekplus\04_GCAN-Term\cangaroo\cangaroo\bin\cangarooTerm.exe</OutputFile>
+  <OutputFile>D:\geekplus\04_GCAN-Term\cangaroo\cangaroo\bin\GcanTerm.exe</OutputFile>
   <Files>
     <Enabled>True</Enabled>
     <DeleteExtractedOnExit>False</DeleteExtractedOnExit>

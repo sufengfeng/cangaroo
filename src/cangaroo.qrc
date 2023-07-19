@@ -1,8 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>assets/mdibg.png</file>
-        <file>assets/cangaroo.png</file>
-        <file>assets/cangaroo.svg</file>
         <file>images/application-exit.png</file>
         <file>images/download.png</file>
         <file>images/save.png</file>
@@ -11,5 +8,6 @@
         <file>images/disconnect.png</file>
         <file>images/settings.png</file>
         <file>images/saved.png</file>
+        <file>assets/cangaroo.png</file>
     </qresource>
 </RCC>
