@@ -146,7 +146,7 @@ void Downloader::setFileName(const QString &file)
    m_fileName = file;
 
    if (m_fileName.isEmpty())
-      m_fileName = "GcanTerm.exe";
+      m_fileName = "GCAN-Term.exe";
 }
 
 /**

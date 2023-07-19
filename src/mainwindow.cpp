@@ -503,16 +503,16 @@ bool MainWindow::showSetupDialog()
 
 void MainWindow::showAboutDialog()
 {
-    QMessageBox::about(this,
-                       "About cangaroo",
-                       "cangaroo\n"
-                       "open source can bus analyzer\n"
-                       "\n"
-                       "version 0.2.3\n"
-                       "\n"
-                       "(c)2015-2017 Hubert Denkmair\n"
-                       "(c)2018-2022 Ethan Zonca"
-                      );
+//    QMessageBox::about(this,
+//                       "About cangaroo",
+//                       "cangaroo\n"
+//                       "open source can bus analyzer\n"
+//                       "\n"
+//                       "version 0.2.3\n"
+//                       "\n"
+//                       "(c)2015-2017 Hubert Denkmair\n"
+//                       "(c)2018-2022 Ethan Zonca"
+//                      );
 }
 
 void MainWindow::startMeasurement()
