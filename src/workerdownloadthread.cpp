@@ -225,7 +225,7 @@ void WorkerDownloadThread::SubBoardUpdate(void)
     {
         if(pMotor->eSendSt == MUPDATE_SENDED_SUCC || (pMotor->responseWordIndex > gBinSizeWord)) //MUPDATE_SENDED_SUCC:4
         {
-            emit Signal_progress(m_nProceValue,  "pMotor->eSendSt == MUPDATE_SENDED_SUCC. Finish Done!");
+            emit Signal_progress(m_nProceValue,  "Finish Done Succfully!");
             break;
         }
         if(pMotor->eSendSt == MUPDATE_ERROR)
@@ -237,12 +237,12 @@ void WorkerDownloadThread::SubBoardUpdate(void)
         {
             case MUPDATE_NULL:
             {
-                QString tmpStr = (flag_MUPDATE_NULL ? "-> Waiting for the device to be upgraded to be inserted..." : "");
+//                QString tmpStr = (flag_MUPDATE_NULL ? "-> Waiting for the device to be upgraded to be inserted..." : "");
                 if(flag_MUPDATE_NULL)
                 {
                     flag_MUPDATE_NULL = 0;
                 }
-                emit Signal_progress(m_nProceValue,  tmpStr);
+                emit Signal_progress(m_nProceValue,  "");
                 pMotor->sendWordTotal      = gBinSizeWord ;
                 pMotor->sendWordCheckSum   = gBinCheckSum;
                 bsp_SubBoard_Update_Start(m_nCanID, m_nUpdateType);

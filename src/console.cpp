@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
 **
 ** Copyright (C) 2012 Denis Shienkov <denis.shienkov@gmail.com>
 ** Copyright (C) 2012 Laszlo Papp <lpapp@kde.org>
@@ -89,6 +89,7 @@ void Console::keyPressEvent(QKeyEvent* e)
             QPlainTextEdit::keyPressEvent(e);
             break;
         default:
+            this->moveCursor(QTextCursor::End);     //移动光标到最后一行
             //            if(m_localEchoEnabled)
             //            {
             //                QPlainTextEdit::keyPressEvent(e);

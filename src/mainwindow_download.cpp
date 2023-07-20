@@ -168,7 +168,7 @@ void MainWindow_Download::DownloadFile(void)
     m_sFilePathName = ui->lineEdit->text();
     ui->tabWidget->setCurrentIndex(0);
     int canid = ui->spinBox_CanID->value();
-    int updateType = ui->comboBox_UpdateType->currentIndex();
+    int updateType = 0;
     SetConfigDowndFilePath(m_sFilePathName);            //保存下载文件位置
     m_sWorkerDownloadThread->StartUpdateHardWare(m_sFilePathName, canid, updateType);
 }

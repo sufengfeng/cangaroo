@@ -15,7 +15,7 @@
 #include <driver/SLCANDriver/SLCANDriver.h>
 #include <driver/CANBlastDriver/CANBlasterDriver.h>
 #include <driver/CanInterface.h>
-#include "qmywidget.h"
+//#include "qmywidget.h"
 #include "mainwindow_download.h"
 #include "QSimpleUpdater.h"
 #include "buildversion/version.h"
@@ -42,36 +42,23 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
     m_console->setEnabled(false);
     m_Qtimer_2s = new QTimer(this);     //2s计数器
     connect(m_Qtimer_2s, SIGNAL(timeout()), this, SLOT(Slot_HandleTimeout()));
-//    setWindowIcon(QIcon(":/assets/cagaroo.png"));
-
     //浮动窗口
-    m_sDockRight = new QDockWidget(this);
-    addDockWidget(Qt::RightDockWidgetArea, m_sDockRight);
+    m_sDockRight = m_ui->dockWidget_right;
 
-    QMyWidget* widge = new QMyWidget;
-    widge->size = QSize(300, 250);
-    m_sDockRight->setWidget(widge);
-    m_sTraceDockLeft = new TraceWindow(widge, backend());
-
+    m_sTraceDockLeft = new TraceWindow(m_ui->dockWidgetContents_right, backend());
     m_sDockRight->hide();
+
     m_sMainWindow_Download = new MainWindow_Download;
     //左侧浮动窗口
-    m_sDockLeft = new QDockWidget(this);
+    m_sDockLeft = m_ui->dockWidget_left;
     addDockWidget(Qt::LeftDockWidgetArea, m_sDockLeft);
 
-    QMyWidget* widgeDeviceList = new QMyWidget;
-    widge->size = QSize(200, 400);
-    m_sDockLeft->setWidget(widgeDeviceList);
-    m_sQListWidget = new QListWidget(widgeDeviceList);
-    //    QListWidgetItem* item = new QListWidgetItem;
-    //    item->setData(Qt::DisplayRole, "1");
-    //    item->setData(Qt::CheckStateRole, Qt::Checked);
-    //    m_sQListWidget->addItem(item);
+//    QMyWidget* widgeDeviceList = new QMyWidget;
+//    widgeDeviceList->size = QSize(200, 400);
+//    m_sDockLeft->setWidget(widgeDeviceList);
+    m_sQListWidget = new QListWidget(m_ui->dockWidgetContents_left);
+//    m_ui->dockWidget->setWidget(widge);
 
-    //    QListWidgetItem* item1 = new QListWidgetItem;
-    //    item1->setData(Qt::DisplayRole, "2");
-    //    item1->setData(Qt::CheckStateRole, Qt::Checked);
-    //    m_sQListWidget->addItem(item1);
     connect(m_sQListWidget, &QListWidget::itemClicked, this, &MainWindow_terminal::Slot_DeviceList_ItemClicked);
     m_sDockLeft->hide();
 
@@ -219,7 +206,7 @@ QList<QString> g_lVersionList={
     "V1.7.2 增加程序时开启terminal和日志记录功能",
     "V1.8.4 修复teminal显示空行问题，修复日志保存空行问题，增加超时自动追加时间戳功能",
     "V1.9.4 修改启动版本自检屏蔽提示，修改图标",
-    "V1.9.5 修改enigma脚本，修改程序图标为PNG格式",
+    "V1.9.8 修改enigma脚本，修改程序图标为PNG格式，增加启动速度",
     "V1.10.0 待发布",
 };
 
@@ -330,7 +317,7 @@ int MainWindow_terminal::SetCanInterfaceId(int interfaceId)
 }
 bool MainWindow_terminal::IsCanDevice(void)
 {
-    return m_ui->actionCanDevice->isChecked();
+    return m_ui->actionCanDevice->isChecked()?false:true;
 }
 //! [6]
 void MainWindow_terminal::writeData(const QByteArray& data)
@@ -465,7 +452,8 @@ void MainWindow_terminal::SlotReveiveCanData(int idx)
                         int index = data.indexOf('\n', i);
                         if(index >= 0){ //行首增加时间
                             QDateTime current_date_time = QDateTime::currentDateTime();
-                            QString current_date = current_date_time.toString("[yyyy.MM.dd-hh:mm:ss.zzz] ");
+//                            QString current_date = current_date_time.toString("[yyyy.MM.dd-hh:mm:ss.zzz] ");
+                            QString current_date = current_date_time.toString("[MM.dd-hh:mm:ss] ");
                             data.insert(index + 1, current_date.toUtf8());
                             i += index + 1+current_date.length();
                         }

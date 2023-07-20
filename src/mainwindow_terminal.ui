@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>843</width>
-    <height>657</height>
+    <width>1132</width>
+    <height>779</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,7 +45,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>843</width>
+     <width>1132</width>
      <height>25</height>
     </rect>
    </property>
@@ -97,6 +97,26 @@
    <addaction name="actionDownload"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="dockWidget_right">
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_right">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <widget class="QComboBox" name="comboBox"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_left">
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_left">
+    <layout class="QGridLayout" name="gridLayout_2"/>
+   </widget>
+  </widget>
   <action name="actionAbout">
    <property name="text">
     <string>&amp;About</string>
@@ -122,7 +142,7 @@
     <string>C&amp;onnect</string>
    </property>
    <property name="toolTip">
-    <string>Connect to serial port</string>
+    <string>Connect to device</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -137,7 +157,7 @@
     <string>&amp;Disconnect</string>
    </property>
    <property name="toolTip">
-    <string>Disconnect from serial port</string>
+    <string>Disconnect</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
@@ -152,7 +172,7 @@
     <string>&amp;Configure</string>
    </property>
    <property name="toolTip">
-    <string>Configure serial port</string>
+    <string>Configure</string>
    </property>
    <property name="shortcut">
     <string>Alt+C</string>
@@ -167,7 +187,7 @@
     <string>C&amp;lear</string>
    </property>
    <property name="toolTip">
-    <string>Clear data</string>
+    <string>Clear Screen</string>
    </property>
    <property name="shortcut">
     <string>Alt+L</string>
@@ -190,20 +210,23 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
-    <string>CanDevice</string>
+    <string>Serial Device</string>
    </property>
   </action>
   <action name="actionCallDevices">
    <property name="text">
-    <string>ShowAllDevices</string>
+    <string>Scan CAN Device</string>
+   </property>
+   <property name="toolTip">
+    <string>Scan CAN Device</string>
    </property>
   </action>
   <action name="actioncangaroo">
    <property name="text">
-    <string>CanAnsys</string>
+    <string>CAN Debug</string>
    </property>
   </action>
   <action name="actionCanAlyst">
@@ -211,7 +234,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>CanAlyst</string>
+    <string>CAN Stream</string>
    </property>
   </action>
   <action name="actionDownload">
@@ -232,7 +255,7 @@
     <string>Save</string>
    </property>
    <property name="toolTip">
-    <string>save log to ...</string>
+    <string>Save log to ...</string>
    </property>
   </action>
   <action name="actionCheckUpdates">

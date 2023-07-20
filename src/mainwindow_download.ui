@@ -38,30 +38,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>OTA类型:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="comboBox_UpdateType">
-        <item>
-         <property name="text">
-          <string>APP</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>CFG</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item>
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>文件下载:</string>
+         <string>File:</string>
         </property>
        </widget>
       </item>
@@ -126,7 +105,7 @@
      <x>0</x>
      <y>0</y>
      <width>1104</width>
-     <height>26</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>
