@@ -1,1 +1,1 @@
-#define BUTIANYUN_VERSION "1.10.5" 
+#define BUTIANYUN_VERSION "1.10.6" 
