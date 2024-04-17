@@ -53,7 +53,7 @@
 #define CONSOLE_H
 
 #include <QPlainTextEdit>
-
+#include <QMimeData>
 class Console : public QPlainTextEdit
 {
     Q_OBJECT
@@ -69,10 +69,10 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent* e) override;
-    //    void mousePressEvent(QMouseEvent *e) override;
+//        void mousePressEvent(QMouseEvent *e) override;
     //    void mouseDoubleClickEvent(QMouseEvent *e) override;
-    //    void contextMenuEvent(QContextMenuEvent *e) override;
-
+//        void contextMenuEvent(QContextMenuEvent *e) override;
+        void insertFromMimeData(const QMimeData *source) override;
 private:
     bool m_localEchoEnabled = false;
 };

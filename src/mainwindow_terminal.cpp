@@ -207,7 +207,8 @@ QList<QString> g_lVersionList={
     "V1.8.4 修复teminal显示空行问题，修复日志保存空行问题，增加超时自动追加时间戳功能",
     "V1.9.4 修改启动版本自检屏蔽提示，修改图标",
     "V1.9.8 修改enigma脚本，修改程序图标为PNG格式，增加启动速度",
-    "V1.10.0 待发布",
+    "V1.10.1 修复clear后,偶先报文空指针问题;增加粘贴回文显示功能;增加升级时可选是否回文显示功能",
+    "V1.11.1 待发布",
 };
 
 //! [5]
@@ -394,8 +395,9 @@ int  MainWindow_terminal::CallBackReveiveCanData(CanMessage message)
 void MainWindow_terminal::SlotReveiveCanData(int idx)
 {
     CanTrace* p_sTrace = backend().getTrace();
-
     const CanMessage* p_sCanMessage = p_sTrace->getMessage(idx);
+    if(p_sCanMessage==NULL)
+        return ;
     //    qDebug() << "test" << idx << p_sCanMessage->getLength() << p_sCanMessage->getByte(0);
     if(p_sCanMessage->getId() == (0x170 + GetCanId()))
     {

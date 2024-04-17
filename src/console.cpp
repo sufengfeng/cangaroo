@@ -121,3 +121,11 @@ void Console::keyPressEvent(QKeyEvent* e)
 //{
 //    Q_UNUSED(e)
 //}
+//发送粘贴的数据
+void Console::insertFromMimeData(const QMimeData *source){
+    QString insertInfo = source->text();
+    if(insertInfo.isEmpty())
+        return;
+    emit getData(insertInfo.toLocal8Bit());
+    //    QPlainTextEdit::insertFromMimeData(source);   //停止输出
+}

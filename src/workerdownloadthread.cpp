@@ -14,6 +14,7 @@ WorkerDownloadThread::WorkerDownloadThread()
     m_nUpdateType = 0;
     m_nProceValue = 0;
     _IsRunning = 1;
+    m_bFlagUpgradeEcho = false;
 }
 
 WorkerDownloadThread::~WorkerDownloadThread()
@@ -129,7 +130,9 @@ void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
 }
 void WorkerDownloadThread::UpdateSubBoardMain(void)
 {
-    backend().getTrace()->SetUpgradeStatus(true);       //停止更新trace
+    m_nProceValue = 0;
+    if(m_bFlagUpgradeEcho==false)
+        backend().getTrace()->SetUpgradeStatus(true);       //停止更新trace
 
     /* Check Ready and Init. */
     if(SubBoardUpdateStateReady())
@@ -144,8 +147,8 @@ void WorkerDownloadThread::UpdateSubBoardMain(void)
 
     SubBoardUpdate();//BJF ID
     SubBoardUpdateEnd();
-
-    backend().getTrace()->SetUpgradeStatus(false);      //继续更新trace
+    if(m_bFlagUpgradeEcho==false)
+        backend().getTrace()->SetUpgradeStatus(false);      //继续更新trace
 }
 //8位加法累加和取反
 u16 CheckSumAdd08Anti(unsigned char* buffer, int length)
@@ -180,6 +183,7 @@ unint32 WorkerDownloadThread::SubBoardUpdateStateReady(void)
         }
         delete []pBuff ;
         file->close();
+        emit Signal_progress(m_nProceValue,  QString("File:[%1]").arg(m_sFilePathName));
     }
     else
     {
@@ -278,7 +282,7 @@ void WorkerDownloadThread::SubBoardUpdate(void)
                 memcpy(&pMotor->sendData, m_sBinFileRawData.data() + ((tmpResponseIndex - 1) * 4), sizeof(int));
                 SubBoardUpdateSendPackData(m_nCanID, tmpResponseIndex, pMotor->sendData);
                 m_nProceValue = tmpResponseIndex * 100.0 / gBinSizeWord;
-                //                emit Signal_progress(m_nProceValue,  "");
+                                emit Signal_progress(m_nProceValue,  "");
                 static int counterTimeout = 0;
 
                 if(tmpResponseIndex > 20 && counterTimeout++ > 1000)

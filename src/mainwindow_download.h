@@ -37,6 +37,9 @@ public slots:
 
 public:
     WorkerDownloadThread* m_sWorkerDownloadThread;
+private slots:
+    void on_checkBoxUpdateEcho_stateChanged(int arg1);
+
 private:
     Ui::MainWindow_Download* ui;
 
