@@ -38,13 +38,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBoxUpdateEcho">
-        <property name="text">
-         <string>升级报文回显</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QLabel" name="label">
         <property name="text">
          <string>File:</string>

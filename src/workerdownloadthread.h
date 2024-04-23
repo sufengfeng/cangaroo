@@ -110,7 +110,6 @@ public:
     void HandleCanMessage(const CanMessage* p_sCanMessage);
     void StopDownload(void);
     void stopTread(void);
-    void SetUpdateStatus(bool status);
 signals:
     void Signal_progress(const int value, QString str);
 

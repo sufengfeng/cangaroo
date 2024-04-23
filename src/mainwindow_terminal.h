@@ -93,6 +93,7 @@ public slots:
     void Slot_SaveLog(void);
     void Slot_HandleTimeout(void);
     void Slot_checkForUpdates(void);
+    void Slot_actionShowFrame(void);
     void Slot_updateChangelog(const QString &url);
     void Slot_displayAppcast(const QString &url, const QByteArray &reply);
 signals:

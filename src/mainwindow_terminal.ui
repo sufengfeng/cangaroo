@@ -46,7 +46,7 @@
      <x>0</x>
      <y>0</y>
      <width>1132</width>
-     <height>25</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuCalls">
@@ -70,6 +70,7 @@
     <addaction name="actioncangaroo"/>
     <addaction name="actionCanAlyst"/>
     <addaction name="actionDownload"/>
+    <addaction name="actionShowFrame"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -260,7 +261,18 @@
   </action>
   <action name="actionCheckUpdates">
    <property name="text">
-    <string>Check for updates</string>
+    <string>检查更新</string>
+   </property>
+  </action>
+  <action name="actionShowFrame">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>显示报文</string>
    </property>
   </action>
  </widget>

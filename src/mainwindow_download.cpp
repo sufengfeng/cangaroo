@@ -181,12 +181,4 @@ void MainWindow_Download::HandleCanMessage(const CanMessage* p_sCanMessage)
 {
     m_sWorkerDownloadThread->HandleCanMessage(p_sCanMessage);
 }
-void MainWindow_Download::on_checkBoxUpdateEcho_stateChanged(int arg1)
-{
-    if(ui->checkBoxUpdateEcho->isChecked())
-        m_sWorkerDownloadThread->SetUpdateStatus(true);
 
-    else {
-        m_sWorkerDownloadThread->SetUpdateStatus(false);
-    }
-}

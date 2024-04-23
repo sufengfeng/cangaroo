@@ -83,7 +83,7 @@ MainWindow_terminal::MainWindow_terminal(QWidget* parent) :
 
     m_updater = QSimpleUpdater::getInstance();
     connect(m_ui->actionCheckUpdates, &QAction::triggered, this, &MainWindow_terminal::Slot_checkForUpdates);
-
+    connect(m_ui->actionShowFrame, &QAction::triggered, this, &MainWindow_terminal::Slot_actionShowFrame);
     /* Check for updates when the "Check For Updates" button is clicked */
     connect(m_updater, &QSimpleUpdater::checkingFinished, this, &MainWindow_terminal::Slot_updateChangelog);
     connect(m_updater, &QSimpleUpdater::appcastDownloaded, this, &MainWindow_terminal::Slot_displayAppcast);
@@ -746,8 +746,15 @@ void MainWindow_terminal::keyPressEvent(QKeyEvent* e)
             ;
     }
 }
+//设置是否显示报文
+void MainWindow_terminal::Slot_actionShowFrame(void){
+    if(m_ui->actionShowFrame->isChecked())
+        backend().getTrace()->SetUpgradeStatus(true);       //停止更新trace
+    else {
+        backend().getTrace()->SetUpgradeStatus(false);       //停止更新trace
+    }
+}
 
-// Window::checkForUpdates
 void MainWindow_terminal::Slot_checkForUpdates(void)
 {
     /* Get settings from the UI */
