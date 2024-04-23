@@ -14,7 +14,6 @@ WorkerDownloadThread::WorkerDownloadThread()
     m_nUpdateType = 0;
     m_nProceValue = 0;
     _IsRunning = 1;
-    m_bFlagUpgradeEcho = false;
 }
 
 WorkerDownloadThread::~WorkerDownloadThread()
@@ -128,11 +127,14 @@ void WorkerDownloadThread::HandleCanMessage(const CanMessage* RxMessage)
         }
     }
 }
+void WorkerDownloadThread::SetUpdateStatus(bool status){
+    backend().getTrace()->SetUpgradeStatus(status);
+}
+
 void WorkerDownloadThread::UpdateSubBoardMain(void)
 {
     m_nProceValue = 0;
-    if(m_bFlagUpgradeEcho==false)
-        backend().getTrace()->SetUpgradeStatus(true);       //停止更新trace
+    backend().getTrace()->SetUpgradeStatus(true);       //停止更新trace
 
     /* Check Ready and Init. */
     if(SubBoardUpdateStateReady())
@@ -147,8 +149,7 @@ void WorkerDownloadThread::UpdateSubBoardMain(void)
 
     SubBoardUpdate();//BJF ID
     SubBoardUpdateEnd();
-    if(m_bFlagUpgradeEcho==false)
-        backend().getTrace()->SetUpgradeStatus(false);      //继续更新trace
+    backend().getTrace()->SetUpgradeStatus(false);      //继续更新trace
 }
 //8位加法累加和取反
 u16 CheckSumAdd08Anti(unsigned char* buffer, int length)
